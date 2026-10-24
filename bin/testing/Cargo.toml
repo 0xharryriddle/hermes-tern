@@ -1,0 +1,20 @@
+[package]
+name = "hermes-tern-testing"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Labelled native UI fixture runner; no model calls"
+
+[[bin]]
+name = "hermes-tern-testing"
+path = "src/main.rs"
+
+[dependencies]
+hermes-tern-core.workspace = true
+hermes-tern-gateway.workspace = true
+hermes-tern-ui.workspace = true
+tern-sdk.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

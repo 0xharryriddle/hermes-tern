@@ -1,0 +1,22 @@
+[package]
+name = "hermes-tern"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Hermes for Tern production executable"
+
+[[bin]]
+name = "hermes-tern"
+path = "src/main.rs"
+
+[dependencies]
+hermes-tern-cli.workspace = true
+
+[dev-dependencies]
+hermes-tern-store.workspace = true
+hermes-tern-supervisor.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

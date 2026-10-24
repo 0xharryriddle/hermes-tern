@@ -1,0 +1,18 @@
+[package]
+name = "hermes-tern-store"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Durable bounded actor mailbox and task leases"
+
+[dependencies]
+hermes-tern-core.workspace = true
+rusqlite = { workspace = true, features = ["serialize"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+rustix.workspace = true
+
+[lints]
+workspace = true

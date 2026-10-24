@@ -1,0 +1,10 @@
+/target/
+/.local/
+/.hermes/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.jsonl
+/plugins/hermes-tern/tern.d.luau

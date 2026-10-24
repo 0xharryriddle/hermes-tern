@@ -1,0 +1,533 @@
+{
+  "schema_version": 1,
+  "checkpoint": "history-projection-local-verified-partial-acceptance",
+  "authority": "Task state only; planned tasks do not authorize execution. Evidence claims require verification.json and STATUS.md.",
+  "requirements": [
+    {
+      "id": "R-01",
+      "title": "Native Rust surface and readable fallback"
+    },
+    {
+      "id": "R-02",
+      "title": "Explicit safe Tern plugin entry point"
+    },
+    {
+      "id": "R-03",
+      "title": "Structured Hermes session control"
+    },
+    {
+      "id": "R-04",
+      "title": "Human approvals and interactive requests"
+    },
+    {
+      "id": "R-05",
+      "title": "Hermes capability preservation"
+    },
+    {
+      "id": "R-06",
+      "title": "Independent parallel Hermes actors"
+    },
+    {
+      "id": "R-07",
+      "title": "Attributed durable peer communication"
+    },
+    {
+      "id": "R-08",
+      "title": "OMP coexistence and opt-in cooperation"
+    },
+    {
+      "id": "R-09",
+      "title": "Recovery without duplicate side effects"
+    },
+    {
+      "id": "R-10",
+      "title": "Security and data minimization"
+    },
+    {
+      "id": "R-11",
+      "title": "Observable bounded scaling"
+    },
+    {
+      "id": "R-12",
+      "title": "Reproducible development and release"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T-01",
+      "title": "SDK and repository bootstrap",
+      "milestone": "M0",
+      "status": "done",
+      "depends_on": [],
+      "requirements": [
+        "R-01",
+        "R-02",
+        "R-12"
+      ],
+      "acceptance": [
+        "Build real pinned Rust SDK, CLI preview and strict error handling.",
+        "Provide thin explicit Luau launcher package without agent startup.",
+        "Run local build/tests and isolated native preview; distinguish plugin-window acceptance."
+      ],
+      "evidence": [
+        "./verify.sh: Rust build/clippy and 7 CLI tests passed.",
+        "python3 -B scripts/smoke_native.py: real light/dark preview render passed.",
+        "Historical bootstrap scratch install passed. After the split, cargo install --locked --offline --debug --path bin/hermes-tern --root <private-scratch> also passed; installed version 0.1.0 verified.",
+        "Isolated tern plugin link/list readback: package parses; window execution not established."
+      ],
+      "blockers": []
+    },
+    {
+      "id": "T-02",
+      "title": "Canonical documentation and verification baseline",
+      "milestone": "M0",
+      "status": "done",
+      "depends_on": [
+        "T-01"
+      ],
+      "requirements": [
+        "R-01",
+        "R-02",
+        "R-03",
+        "R-04",
+        "R-05",
+        "R-06",
+        "R-07",
+        "R-08",
+        "R-09",
+        "R-10",
+        "R-11",
+        "R-12"
+      ],
+      "acceptance": [
+        "All canonical docs under docs/, navigable from index with source-qualified claims.",
+        "Task dependency/requirement integrity and negative controls pass.",
+        "Status and roadmap reflect actual evidence; design remains proposed."
+      ],
+      "evidence": [
+        "./verify.sh: 14 Python tests and documentation integrity passed.",
+        "Initial bootstrap checkpoint: 17 docs Markdown pages, 3 machine-readable ledgers, 14 tasks and 12 requirements; current docs counts are in docs/verification.json.",
+        "Parent semantic/source review corrected Hermes WS ownership and scoped native AgentCx claims."
+      ],
+      "blockers": []
+    },
+    {
+      "id": "T-03",
+      "title": "Isolated real-window launcher acceptance",
+      "milestone": "M1",
+      "status": "blocked",
+      "depends_on": [
+        "T-01"
+      ],
+      "requirements": [
+        "R-02",
+        "R-10"
+      ],
+      "acceptance": [
+        "Load actual Luau entry in isolated Tern desktop window, invoke its palette action and identify the launched executable.",
+        "Confirm preview surface and missing-executable error visibility; prove loading alone starts no actor.",
+        "Preserve personal plugins/config/runtime and stop test-owned processes."
+      ],
+      "evidence": [
+        "Isolated package catalog accepted manifest/entry paths.",
+        "Owner-authorized personal developer installation2026-10-24:verified0.1.0 binary0755 on login-shell PATH and Tern plugin copy match checkout/build. Installed plain and light/dark offscreen preview pass;doctor connected without session mutation/inference. No daemon at install,catalog ready proves parsing only;actual-window acceptance remains blocked. No peer plugin or Hermes restart.",
+        "Xvfb window control action returned ok, but expected preview surface timed out; initial gate.applies=true and gate.signed_in=false.",
+        "Owned daemon/window processes stopped; no scoped leftovers observed."
+      ],
+      "blockers": [
+        "Isolated real-window preview not established; unsigned-in Tern access gate requires an explicitly authorized test account/window.",
+        "Missing-executable and no-auto-start behavioral cases still need a qualified window harness."
+      ]
+    },
+    {
+      "id": "T-04",
+      "title": "Owner architecture review and first live-slice plan",
+      "milestone": "M1",
+      "status": "done",
+      "depends_on": [
+        "T-02"
+      ],
+      "requirements": [
+        "R-03",
+        "R-04",
+        "R-05",
+        "R-06",
+        "R-07",
+        "R-08",
+        "R-09",
+        "R-10",
+        "R-11",
+        "R-12"
+      ],
+      "acceptance": [
+        "Owner reviews written architecture and contract boundaries.",
+        "Write detailed first-slice plan with Create/Modify ownership, version-qualified APIs, RED/GREEN steps and fail-closed rollback.",
+        "Owner approves the plan and execution method before runtime implementation."
+      ],
+      "evidence": [
+        "Owner explicitly instructed implementation completion after presentation of docs/implementation-plan.md; native execution selected.",
+        "File ownership, source-qualified APIs, RED/GREEN steps and external gates are recorded in the implementation plan."
+      ],
+      "blockers": []
+    },
+    {
+      "id": "T-05",
+      "title": "Qualify Hermes gateway attachment",
+      "milestone": "M1",
+      "status": "in_progress",
+      "depends_on": [
+        "T-04"
+      ],
+      "requirements": [
+        "R-03",
+        "R-05",
+        "R-09",
+        "R-10"
+      ],
+      "acceptance": [
+        "Resolve U-01 with supported discover/auth/WS attach evidence at an exact runtime revision.",
+        "Attach without another profile writer or unintended runtime restart; incompatible/auth-failed cases refuse clearly.",
+        "Isolated stdio tests cannot substitute for existing-owner attachment."
+      ],
+      "evidence": [
+        "Rust doctor connected to existing owner using discover-only helper and canonical WebSocket; ping, grant identity and capability checks passed.",
+        "./verify.sh passed: 22 Rust / 17 Python tests; negative protocol/timeout/frame fixtures included."
+      ],
+      "blockers": [
+        "Failure/ownership qualification still expanding; a doctor success does not establish live session behavior."
+      ]
+    },
+    {
+      "id": "T-06",
+      "title": "Real controlled Hermes session contract",
+      "milestone": "M1",
+      "status": "in_progress",
+      "depends_on": [
+        "T-05"
+      ],
+      "requirements": [
+        "R-03",
+        "R-04",
+        "R-05",
+        "R-09",
+        "R-10"
+      ],
+      "acceptance": [
+        "Create/resume/prompt/stream a real session with owner-approved provider budget.",
+        "Exercise deny, expiry, cancellation, disconnect and request/actor/session correlation.",
+        "Before enabling connected mode, reject malformed/oversized frames and test partial frames, EOF, timeout and bounded shutdown without paid inference.",
+        "Expand CLI/transport tests with child-launch traps, bounded completion, closed stdin and native transport-error cases; isolate HERMES_HOME and clear credentials/connection settings before any runtime-launch smoke.",
+        "Distinguish cancel-turn, close-view, detach and terminate-backend; never signal an attached external owner or a reused/stale process identity.",
+        "Publish capability matrix and sanitized wire fixtures; sensitive unsupported requests fail closed."
+      ],
+      "evidence": [
+        "Real-socket conversation fixture exercises create, submit, explicit deny, durable terminal receipt and detach.",
+        "Live provider-free create/detach/resume/history passed with unchanged gateway instance; no inference.",
+        "State tests cover generation/identity, duplicate receipt/event, gaps, ambiguity, sensitive decline and batch clarify."
+      ],
+      "blockers": [
+        "Provider-backed stream/deny/expiry/interrupt acceptance requires a bounded owner-approved inference budget."
+      ]
+    },
+    {
+      "id": "T-07",
+      "title": "Native connected single-actor UI",
+      "milestone": "M2",
+      "status": "in_progress",
+      "depends_on": [
+        "T-03",
+        "T-06"
+      ],
+      "requirements": [
+        "R-01",
+        "R-03",
+        "R-04",
+        "R-05",
+        "R-11"
+      ],
+      "acceptance": [
+        "Native keyboard/send paths, stable message/tool IDs and capability-aware controls work.",
+        "No-ACK, wake/EOF, retention, theme/resize and terminal cleanup tests pass.",
+        "Real narrow/wide light/dark/keyboard/approval/error renders inspected."
+      ],
+      "evidence": [
+        "Native/plain common driver and fixed chat launcher implemented.",
+        "History projection local/native synthetic verified:178Rust/191Python,2liveignored,0ResourceWarning,24gates,9package pairs,36native cases/80pairs. One read/no resume,4096rows8MiB escaped retention,32fragments16KiB/page;11Rust/10Python methods added. SDK page-key/bidi/tail-follow/unfinished-paste/backpressure RED/GREEN. First174/190 pass and second178/191 standalone-helper-failed aggregate historical;third fullPASS after test-only delayed-start separation,production deadlines/pins unchanged. Complete delayed bounded review reconciled:all9original hashes match,one bidi finding parent-remediated,current core2/history5/UI4/PTY7 repeatPASS;not independent post-fix approval. Current pixels unreviewedHTTP402;NativeLeftRight/HomeEnd,PageUpDownPTY-only;full-history/server-paging stays open.",
+        "Keyboard local-verified:167Rust/181Python,2liveignored,0ResourceWarning,9locked package pairs,24command gates and32actual Tern synthetic cases/68pairs PASS. Added12UI Rust and10Python methods;UI28. Four current keyboard images inspected across widths/themes/motion modes. Review deleg_f9e822bd3findings reproduced,parent-remediated RED/GREEN;12source hashes matched intake. Positioning ACK separate from view ACK,layout invalidation,bounded SDK-key-authoritative observer,post-ACK ready ring and strict exact mode projections. First165/181 native-failed attempt and previous subsets retained;no independent final-source/live/provider/window promotion.",
+        "Historical connected-session checkpoint: real Tern light/dark labelled session fixture rendered; dark pixels inspected and button spacing corrected.",
+        "Scripted-terminal wake/EOF and Unicode/view tests passed.",
+        "Historical workspace-split recheck: production preview rendered in both themes; native session fixture direct launch returned TTY I/O error, also reproduced by retained pre-split binary. Exec/PTY variants timed out. This was a historical failed probe, not a current-byte render verdict.",
+        "Historical isolated-native-fixture-smoke: default preview plus --fixture/--size,real light/dark wide/narrow images inspected,absent-text exit1/no image,8harness tests PASS. Current rebuilt preview/fixture text/geometry passed again;current production-chat pixels/interaction are separately measured.",
+        "Historical native-chat-review-f1-remediated:18production CLI/PTY/SDK/localWS methods PASS. Original5RED defects plus reviewF1 current/global Error+Gone downgrade fixed. Local per-hydration prompt identity and pointer generation fences retained. New surface-aware adapter drains only decoded inbox through pinned waker barrier,drops actions,preserves static errors;missing waker/oversize refuses.3Rust lifecycle methods complement3view identity tests. Positive controls,draft/backpressure/transport-loss/no-retry/detach/termios pass.",
+        "Four actual Tern0.9.5 production-client wide/narrow light/dark cases each typed and submitted one synthetic prompt,displayed fixture terminal receipt/result,clicked Detach and observed one detach RPC plus exit0 shell sentinel. Four actual images inspected,no clipping/overlap. Synthetic gateway,not live Hermes/provider or Luau-window. Initial Ctrl+d scenario lacked detach evidence and is not counted as exit acceptance.",
+        "Historical F1 handoff:135Rust PASS,2liveignored,119Python PASS,no ResourceWarning;8standalone locked package tests/clippy PASS,Cargo.lock unchanged. Review deleg_b37cb913 establishedF1(P2);parent verified5source/2binary identities+243indexed artifacts,then reproduced4failures/2controls and repaired to6PASS.3review SDK probes PASS;4scratch mutants killed with pristine control. Parent remediation,not independent re-review. Subcases/probes/reruns excluded totals;credential source cohort unchanged,binary match historical.",
+        "Final default autorun passes136Rust/139Python,2liveignored,8standalone packages and20native cases/32image-layout pairs. Eighteen nativePTY methods pass. Two current narrow disconnect images inspected;earlier eight-image review historical. Twelve runner/eight readiness methods pass. Startup review parent-reconciled with3additional real-process RED/GREEN controls,not independent final-source or provider/window/live acceptance.",
+        "Initial bounded-transcript implementation passed complete autorun150Rust/170Python,2ignored,0ResourceWarning,24command gates,9standalone package pairs,24native cases/44image-layout pairs. This generation is historical after review fixes;initial4long-output cases/12pairs and2inspected narrow pixels remain separate evidence.",
+        "Review deleg_0f7f269b parent-reconciled,not independent final-source approval. R1 receipt partial/clipped recovery and R2 same-ID old Show RED then GREEN. R3 canonical admission generation increments source-verified;parent reproduced receipt/info advancement retaining old stream and fixed all3paths;late-partial-after-receipt RED also fixed. Current gateway34/ui16,3transcriptPTY+18adjacentPTY,strictclippy/fmt/lockedbuild PASS.8new gateway/4UI/3PTY/2smoke methods across slice. Complete post-remediation autorun155Rust/171Python,2liveignored,0ResourceWarning,24gates,9package pairs,24native cases/44pairs PASS. Four current long-output images inspected across widths/themes;not all44. Final documentation gate/evidence seal recorded separately."
+      ],
+      "blockers": [
+        "Real-window plugin and provider-backed native conversation acceptance remain unestablished; T-03 access gate still separate.",
+        "History local/native synthetic178/191 with36native cases is partial acceptance:updated pixel inspection and independent final-source approval missing;complete delayed bounded source review received/reconciled. Full/raw/server-paged history,maximum-load,whole-control accessibility,mux/manual-scroll matrix,OS transport failures and provider/window behavior remain open. NativePageDown not qualified;PageUpDownPTY-only. Parent remediation is not independent approval or animation/accessibility certification."
+      ]
+    },
+    {
+      "id": "T-08",
+      "title": "Peer provenance and model-accessible messaging tools",
+      "milestone": "M3",
+      "status": "in_progress",
+      "depends_on": [
+        "T-06",
+        "T-04"
+      ],
+      "requirements": [
+        "R-06",
+        "R-07",
+        "R-10"
+      ],
+      "acceptance": [
+        "Qualified Hermes plugin/public hook exposes narrow send/read/result tools to the actual agent.",
+        "Peer data never becomes system/user authority; unsupported origins become user-confirmed handoffs only.",
+        "Forged identity, cross-workspace routes and peer approval responses are rejected."
+      ],
+      "evidence": [
+        "Pinned Hermes tool metadata/registration source checked: host physical session_id is separate from model arguments and may rotate; profile label is not canonical identity.",
+        "Standalone plugin registers six narrow tools; fixed configured Rust pipe bridge and server-side workspace/actor/incarnation/home/session fencing implemented. Unknown context fails closed without automatic rebinding.",
+        "Seven real bridge and seven plugin tests passed, including direct IPC identity forgery, credential rotation, private binding files, bounded pipe input/output, fake success, stalled helper and no retry.",
+        "scripts/smoke_peer_plugin.py: actual pinned Hermes directory scan/load and registry dispatch passed in isolated home, with six tool registrations and send/read/ack plus forged/missing/rotated context refusal. No agent turn or inference.",
+        "Read-only peer review reconciled with no reproducible defect: production/binary hashes match; known test-only private-binary allocation change inspected; parent full current gate passed. No live acceptance promoted."
+      ],
+      "blockers": [
+        "Provider-backed real-agent tool calls and two live peers remain unestablished; no personal installation or live session configuration performed.",
+        "Binding is explicit operator-attested physical identity only; verified canonical-session continuity across compression and plugin host-isolation mode remain open."
+      ]
+    },
+    {
+      "id": "T-09",
+      "title": "Durable bounded coordination supervisor",
+      "milestone": "M3",
+      "status": "in_progress",
+      "depends_on": [
+        "T-08"
+      ],
+      "requirements": [
+        "R-07",
+        "R-09",
+        "R-10",
+        "R-11"
+      ],
+      "acceptance": [
+        "Implement transactional admission/outbox attempts, bounded storage and replay.",
+        "Crash before/after external send yields honest ambiguity without blind duplicate execution.",
+        "Lease generation races, stale incarnation, duplicate-key conflict, expiry, disk-full and malformed-frame controls pass."
+      ],
+      "evidence": [
+        "crates/store: seventy-three tests passed, including three startup-guard controls plus all seventy prior store methods.",
+        "crates/supervisor: fourteen tests passed, including four retained private-reader/recheck tests plus IPC/authority, failure-safe credential publication/rotation, operator snapshot path recovery, partial-write staging, racing no-clobber, file mode/body bounds and directory capacity.",
+        "bin/hermes-tern process fixture: 56 accepted messages survive killed-process restart; 8 remain ambiguous, 48 consumed, no blind redelivery of the 8. Synthetic one/two/four-actor mailbox traffic only.",
+        "Bound-peer IPC rechecks all identity fields before dispatch, including raw socket attempts bypassing the pipe bridge; repeated operator binding provisioning is idempotent.",
+        "Five production-binary Python recovery tests pass: lost send/receive/ACK/completion/registration/rotation responses followed by kill/restart and reconciliation, concurrent task claimants, incomplete-frame non-admission and explicit closure of real SQLite observer handles.",
+        "Four production-binary Python observation tests pass for operator-only snapshot/events/inspect-message/inspect-task, valid-operator versus peer/unknown-field refusal, non-mutating reads, restart epochs and exact lookup beyond the bounded message snapshot.",
+        "Three production-binary Python release tests pass for legacy/peer/forged refusal, exact receipt replay, same-actor and new-owner generation fencing, and lost release response with killed-process restart. The old task-ID-only stale release bug was reproduced before implementation.",
+        "Four production-binary archive tests pass for complete WAL-backed snapshots, unchanged source/private modes, exact-ID retry after advancement and lost reply/kill/restart, operator/peer/corruption/capacity controls, and required fsync retry after post-rename failure.",
+        "Six production-binary disposition tests pass: exact decision retry after lost reply/kill/restart, peer/forgery/route refusal and rollback, retained-row metadata, ACK/decision race, sender-scoped collision fencing. Nine Rust tests cover budgets, full-journal close, old ACKs, successor expiry and semantic corruption.",
+        "Six production-binary migration tests pass against frozen v1 DDL: explicit upgrade without recovery, lock/schema/workspace refusal, rollback/stale archive, exact committed replay after advancement, missing/corrupt archive and pre-upgrade root-fsync EIO with real-sync recovery.",
+        "Historical T16 complete default autorun:136Rust/139Python PASS,2liveignored,0ResourceWarning,8standalone package pairs. Startup-only fixtures corrected after RED;productionRust/IPC/expiry/operation/barrier/shutdown limits unchanged. Prior coordinator/native/archive failures retained. Shared test-fixture members changed,so previous exact review cohorts remain historical for those members.",
+        "Historical bounded migration/disposition review reconciled without a concrete introduced defect: all 17 source hashes/sizes and parent-rebuilt binary matched then. Parent repeated focused suites and 3 reviewer probes; repeats/probes are excluded from totals. Subsequent archive/migration image edits do not inherit this review.",
+        "Complete delayed pre-v2 design guidance reconciled; legacy full-journal close, tenth archive table and sequence-only stale migration controls passed. Its archive-identity residual now has parent remediation: queries use the exact hashed read-only image, descriptors/bytes rechecked before commit and after retry sync. Four Rust and three real-binary test methods cover replacements, mutation, metadata, size, original-query stability, rollback and valid controls. Bounded seven-file review deleg_181935d3 reconciled without a concrete introduced defect; source hashes/sizes and rebuilt binary match, parent reran 6 Rust/3 Python and12 supplemental mutation arms (not added to totals).",
+        "Retained archive recovery: six Rust and six Python tests pass, initial API/command selectors RED before implementation. Exact staging/archive/digest identity, operator-only IPC, complete v1/v2 bundles, DB/manifest/directory/root fsync failures, lost reply/restart, no-clobber race, post-sync mutations, entry capacity and unchanged source/bytes/inodes tested. Historical eight-source review deleg_04345aa7 reconciled without a concrete defect established; source hashes/sizes and parent-rebuilt binary matched then, before later supervisor private-reader changes. Parent reran 6 Rust/6 Python and9 supplemental post-sync database-byte/bundle-directory/archive-root arms, all PASS; scratch probes/reruns excluded totals. No credential recovery, restore, deletion or compaction.",
+        "Owner-only private-file sync: three production regressions RED then GREEN; four new Rust and seven Python methods pass for binding retry/operator-key restart, file and directory sync errors, new directory-entry sync, capacity, invalid content and post-sync byte/inode/directory substitutions with unchanged/repair controls. Ordinary reads stay read-only. Historical four-source review deleg_24ef3b0c reconciled without a concrete defect established; source hashes/sizes and parent-rebuilt binary matched then, parent reran8 focused Rust/7 Python plus3 supplemental probes PASS (excluded from totals). No credential adoption/rotation, deletion or profile change. New supervisor state-command wiring is a separate review delta.",
+        "Revision-bound complete operator state pages: ten Rust and six production-binary Python tests PASS after initial missing-API/CLI RED. Seven collections, typed all-table logical revision, read-transaction consistency, full payload/result and migration/disposition provenance,130-row walks,byte-limited whole records,precise counters,empty/end pages,no-write triggers,clock-only/same-count/restart invalidation,malformed/peer/extra-field denial,and separate committing WAL-writer controls. Historical seven-source review deleg_11fd2e82 reconciled without a concrete defect established; source hashes/sizes and parent-built binary matched then. Later credential modules/IPC/bridge are outside that cohort. Parent repeated10Rust/6Python and4 byte-identical supplemental probes for independently encoded nine-table revisions,concurrent actor/task coherence,near-cap message pages and authorization/no-write controls; repetitions/probes excluded totals. Whole-store synchronous scans and mutation-heavy walk starvation remain unqualified; no restore/compaction or incremental event projection.",
+        "Retained current-credential recovery: four new Rust and nine production-binary Python tests PASS after missing-API/4initial-command RED. Exact current workspace/actor/incarnation/hash checked under SQLite writer exclusion across filesystem callback,no DML or new authority. Complete bounded strict envelope shared with peer bridge,fixed staged/final names,retained bytes/inode,no-clobber and sync/recheck. Tests cover wrong/stale/uncommitted orphan,partial/unsafe/missing/FIFO candidates,read-only inspection,1024-entry recovery,lost reply/restart,4fsync boundaries,post-sync inode/byte/mode/credential-dir/state-dir changes and final creation race,unchanged/repair controls,and existing peer binding preservation. Ten-source review deleg_21b276f0 reconciled without a concrete defect established:complete report/transcript and21indexed artifacts verified,source hashes/sizes and parent-rebuilt binary match. Parent repeated4Rust/9Python and3supplemental methods for parser/redaction,queued-writer ordering and2process-death boundaries;all PASS,no ResourceWarning,reruns/probes excluded totals. No code remediation,operator-key repair,secret recreation,old authority activation,rotation,deletion,profile change or blanket security approval.",
+        "Operator-key startup guard: three Rust and ten production-binary Python methods PASS after missing-API and missing/invalid-key RED. Under exclusive owner lock before database creation/open/recovery; absent established key refuses without replacement, bootstrap bounded to lock/optional completed key, retained remnants refuse. Exact file/state-dir/parent fsync faults, final-key sync SIGKILL and changed-key barrier, byte/inode preservation and successful recovery controls PASS. Store/supervisor73/14; migration/publication6/7; strict clippy PASS. Complete autorun143Rust/166Python,2liveignored,0ResourceWarning,9package pairs,24gates,20native/32pairs. Source-only review deleg_cfc2b766 NO_DEFECT_ESTABLISHED in six-file scope;parent candidate hashes stable,3Rust/10Python+4supplemental methods repeated PASS. Earlier complete design5items reconciled;keyless migration and established-journal barrier probes do not inflate totals. No key authenticity/pinning,repair,same-user sandbox or powerloss/live acceptance."
+      ],
+      "blockers": [
+        "T-08 tools have isolated loader/registry evidence, not actual provider-backed agent provenance/continuity. Complete operator state enumeration is locally implemented; incremental projection/subscriptions and external dispatch acceptance remain open; bounded invalidation-notice replay and explicit operator new-ID re-offer are implemented locally.",
+        "SQLite page-cap SQLITE_FULL, local claim races, initialization failure rollback and credential pre/post-commit kill boundaries tested; filesystem ENOSPC/fsync/power-loss and full syscall kill qualification remain open. No claim of all crash points or live writer enforcement.",
+        "Prior reviews retain historical exact-source boundaries. Key startup changes production ordering and shared migration/publication fixtures; prior verdicts do not qualify them. Current focused/full gates and bounded current-source review are reconciled. Same-user exclusion, maximum-size memory/latency, walk starvation, restoration/compaction, key pinning/repair, missing-secret recreation, incomplete staging and journal repair remain open. ACK identity cannot distinguish repeated attempts of one message; successor ID remains required."
+      ]
+    },
+    {
+      "id": "T-10",
+      "title": "Parallel independent Hermes actors",
+      "milestone": "M3",
+      "status": "planned",
+      "depends_on": [
+        "T-07",
+        "T-09"
+      ],
+      "requirements": [
+        "R-05",
+        "R-06",
+        "R-07",
+        "R-09",
+        "R-10",
+        "R-11"
+      ],
+      "acceptance": [
+        "Two independently bound Hermes peers exchange attributed tasks/results through real tools.",
+        "Separate approved write scopes and runtime ownership; effective model/provider preserved.",
+        "Renderer loss, one actor crash, cancellation and queue pressure do not corrupt another actor."
+      ],
+      "evidence": [],
+      "blockers": []
+    },
+    {
+      "id": "T-11",
+      "title": "Native Tern OMP interoperability",
+      "milestone": "M4",
+      "status": "in_progress",
+      "depends_on": [
+        "T-10"
+      ],
+      "requirements": [
+        "R-02",
+        "R-07",
+        "R-08",
+        "R-09",
+        "R-10"
+      ],
+      "acceptance": [
+        "Resolve U-04 against installed AgentCx declarations and runtime.",
+        "Implement qualified Rust-to-window connector and explicit opt-in binding.",
+        "Verify sendable readiness, limited transcript, timeout ambiguity and window-loss behavior; no automated approval."
+      ],
+      "evidence": [
+        "Pinned tern.d.luau verified: AgentsCx via cx.agents; process direct callback (result,cx), awaitable callback (result,err,cx); inherited process environment, whole-result capture and no durable ask/interrupt/message receipt.",
+        "Local subset implemented and verified: Rust immutable offers/one-way arm,fixed-argv Luau bridge with explicit pane-level queued-ask consent and no retry.4Rust/17Python focused methods PASS,31synthetic callback scenarios,actual binary race/fsync/SIGKILL controls. Missing command/registration,parent alias,source single-line policy,uncertainty display and producer-shaped regions have RED/GREEN.6scratch guard mutations fail with pristine control. Review deleg_7ddf58bd parent-reconciled,not independent final-source approval. Final autorun140Rust/156Python/2liveignored/24gates/9package pairs/20native cases passed;pre-remediation140/153 retained."
+      ],
+      "blockers": [
+        "Local handoff subset does not close T-10,installed-window execution,actual ask/readiness/approval/cancellation or provider behavior. Request/attempt/target UUIDs correlate the local operation,not a durable OMP actor. Snapshots/Agent handles cannot enforce conditional composer/session binding at eventual delivery. Transcript export deferred in v1;T-11 remains in_progress."
+      ]
+    },
+    {
+      "id": "T-12",
+      "title": "Evaluate and qualify deeper OMP RPC",
+      "milestone": "M4",
+      "status": "planned",
+      "depends_on": [
+        "T-11"
+      ],
+      "requirements": [
+        "R-08",
+        "R-09",
+        "R-10"
+      ],
+      "acceptance": [
+        "Capture actual OMP RPC schema/lifecycle/permission semantics in isolated profile; no inferred Hermes/pi compatibility.",
+        "Implement only if needed capabilities are demonstrated; otherwise record justified deferred lane and unavailable capabilities.",
+        "Native coexistence is not misreported as direct RPC parity."
+      ],
+      "evidence": [
+        "Pinned OMP startup/discovery/RPC sources independently checked;installed official18.12.6 binary matches release SHA256. Parent isolated no-inference ready/negotiate-v2/get_state/stdinEOF probe passed:exit0,no forced cleanup,0messages/tools,settled/no async work. Same-child network namespace rejects reachable-parent loopback and external connects with ENETUNREACH. No prompt/approval/cancel/chunk or native AgentCx acceptance. Two earlier failed probes retained;only whitelisted state persisted."
+      ],
+      "blockers": [
+        "Official release equality is not reproducible source-build equality. General bounded RPC adapter,chunk handling,prompt/result/settlement,cancel/approval and live provider acceptance remain open. Scope-isolated HOME/cwd is not an OS filesystem sandbox;tested network namespace blocks provider contact but does not prove no attempted contact."
+      ]
+    },
+    {
+      "id": "T-13",
+      "title": "Load, crash recovery and security qualification",
+      "milestone": "M5",
+      "status": "planned",
+      "depends_on": [
+        "T-10",
+        "T-11",
+        "T-12"
+      ],
+      "requirements": [
+        "R-09",
+        "R-10",
+        "R-11"
+      ],
+      "acceptance": [
+        "Measure bounded one/two/four-actor workloads and mixed-agent acceptance with versions and host disclosure.",
+        "No accepted-message loss, no blind duplicate side effects and bounded memory/disk under slow consumers.",
+        "Prove any advertised execution sandbox with in-scope/out-of-scope positive and negative controls; otherwise disclose no sandbox."
+      ],
+      "evidence": [],
+      "blockers": []
+    },
+    {
+      "id": "T-14",
+      "title": "Distribution and release readiness",
+      "milestone": "M5",
+      "status": "planned",
+      "depends_on": [
+        "T-13"
+      ],
+      "requirements": [
+        "R-02",
+        "R-10",
+        "R-12"
+      ],
+      "acceptance": [
+        "Owner selects license, platform targets and publication authorization.",
+        "Exact release bytes pass local/native/plugin/live-runtime gates and dependency review.",
+        "Publish verifiable checksums/compatibility/upgrade/rollback notes only after explicit approval."
+      ],
+      "evidence": [
+        "Owner-authorized local developer installation only:exact verified debug binary plus Tern package copy,PATH/version/hash readback,plain/native offscreen preview and no-inference doctor PASS. This is not a release/publication or completion of prerequisite live/load/window gates.",
+        "Initial source publication explicitly authorized2026-10-24 to public empty https://github.com/0xharryriddle/hermes-tern;ADMIN access verified. Inventory178regular source/docs files,no credential-pattern matches,current verify.sh178Rust/191Python with2liveignored PASS. Actual commit/push readback and remote CI are separate;T-14 stays planned for full release/license/load/live/window gates."
+      ],
+      "blockers": []
+    },
+    {
+      "id": "T-16",
+      "title": "Repeatable bounded local and native runtime autorun",
+      "milestone": "M2",
+      "status": "done",
+      "depends_on": [
+        "T-01",
+        "T-04",
+        "T-15"
+      ],
+      "requirements": [
+        "R-01",
+        "R-04",
+        "R-09",
+        "R-10",
+        "R-12"
+      ],
+      "acceptance": [
+        "Run canonical verify.sh and every package's locked tests/clippy, then default native preview/fixture and production-client synthetic control matrix.",
+        "Refuse missing tools/gates/cases/readiness/images/exit, source drift, timeout and output overflow; preserve failed/interrupted reports, bounded logs and exact owned process lifecycle.",
+        "Exercise conversation/Deny/Skip/Interrupt/disconnect wide/narrow light/dark through actual isolated Tern; distinguish synthetic RPC, geometry and selected pixel inspection from real Hermes/provider/window acceptance.",
+        "Observe test RED before implementation, execute a complete current-byte default autorun and synchronize status/roadmap/task/evidence without personal installation or inference."
+      ],
+      "evidence": [
+        "scripts/verify_runtime.py and scripts/smoke_native_chat.py implemented; initial missing-script RED, empty-gate and missing-matrix RED, fixture-deadline/readiness RED and exited-parent descendant RED recorded before fixes.",
+        "Final default autorun exit0 with all22command gates passed:canonical136Rust/139Python,2liveignored,8standalone package test/clippy pairs,static/fixture and20native cases/32image-layout pairs. Two current disconnect images inspected;earlier8image review historical.",
+        "Eight Python/one Rust readiness methods observed RED then GREEN. Startup allowance15s,child-liveness/deadline refusal,accept after setup/launch,exact status probe kill/reap before retry and mid-probe supervisor-death detection. Production/operation/expiry/barrier/shutdown deadlines unchanged;no mutation retries.",
+        "Review deleg_89e43e4e reconciled as earlier-loop guidance;parent verified source semantics and remediated3residual real-process cases. Complete final rerun passed,source witnesses checked and previous failures retained. Not independent post-fix review or full-product/live acceptance."
+      ],
+      "blockers": []
+    },
+    {
+      "id": "T-15",
+      "title": "Owner-directed binary and library workspace split",
+      "milestone": "M1",
+      "status": "done",
+      "depends_on": [
+        "T-01",
+        "T-04"
+      ],
+      "requirements": [
+        "R-12"
+      ],
+      "acceptance": [
+        "Binary crates live in bin/hermes-tern and bin/testing; CLI and existing subsystems are libraries under crates/; no crates/hermes-tern compatibility package.",
+        "Preserve collected behavior-test identities and all external lockfile package records; package-local discovery helper compiles and tests.",
+        "Verify every package independently, both binaries, full local gate and scratch install; retain live/native acceptance limitations separately."
+      ],
+      "evidence": [
+        "Cargo metadata boundary tests passed: 2 binaries and 6 libraries, explicit acyclic dependency boundaries.",
+        "All 53 original Rust test identities preserved: 51 passed, 0 failed, 2 live opt-ins ignored. All 8 packages passed independent locked test and strict clippy.",
+        "131 external Cargo.lock package records unchanged; no additions/removals/version/source/checksum/edge drift.",
+        "cargo build --workspace --bins --locked and ./verify.sh passed; 19 Python tests passed.",
+        "At the split checkpoint production binary version/plain preview and scratch install passed; isolated light/dark native preview passed. Fixture executable fails closed outside TSP; the historical native-fixture recheck failed. Later current-byte rendering evidence is owned by T-07, not credited to this split.",
+        "Read-only split-regression review found no concrete regression; parent matched all 60 reviewed source hashes to current files and rechecked gateway helper packaging. Live/native acceptance excluded."
+      ],
+      "blockers": []
+    }
+  ]
+}

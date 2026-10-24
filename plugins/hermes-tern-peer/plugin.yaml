@@ -1,0 +1,13 @@
+name: hermes-tern-peer
+version: 0.1.0
+kind: standalone
+description: "Bounded attributed mailbox tools for explicitly bound Hermes physical sessions; no automatic agent launch or approval."
+platforms:
+  - linux
+provides_tools:
+  - tern_peer_status
+  - tern_peer_send
+  - tern_peer_receive
+  - tern_peer_ack
+  - tern_task_claim
+  - tern_task_complete

@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-10-24",
+  "sdk": {
+    "repository": "https://github.com/stencil-hq/tern-sdk",
+    "revision": "9e9c07463f4958b0c633424c9860aba499487d28",
+    "package": "tern-sdk",
+    "package_version": "0.1.0",
+    "files": [
+      {
+        "path": "rust/README.md",
+        "url": "https://github.com/stencil-hq/tern-sdk/blob/9e9c07463f4958b0c633424c9860aba499487d28/rust/README.md",
+        "sha256": "b15fc79852f76d8ba12dfaf8a10d09a401725f83c86327cb85a292ebfdc227d9",
+        "bytes": 10683
+      },
+      {
+        "path": "rust/Cargo.toml",
+        "url": "https://github.com/stencil-hq/tern-sdk/blob/9e9c07463f4958b0c633424c9860aba499487d28/rust/Cargo.toml",
+        "sha256": "8058f8446f5239043d59e82f6c19eb642fa4e5bcdf9b9dafdbdf58c10049377f",
+        "bytes": 4981
+      },
+      {
+        "path": "rust/src/lib.rs",
+        "url": "https://github.com/stencil-hq/tern-sdk/blob/9e9c07463f4958b0c633424c9860aba499487d28/rust/src/lib.rs",
+        "sha256": "f33f633827c815c591c18e7b87a4b61fe3442403fa4b8e8eee4c3b19da124a08",
+        "bytes": 3138
+      },
+      {
+        "path": "plugins/tern.d.luau",
+        "url": "https://github.com/stencil-hq/tern-sdk/blob/9e9c07463f4958b0c633424c9860aba499487d28/plugins/tern.d.luau",
+        "sha256": "9de89a72134645d64ea6adf595691b04a24ab6aae3f9f90ecd89a0bb79c4e95e",
+        "bytes": 91687
+      }
+    ]
+  },
+  "hermes_source_observation": {
+    "scope": "local installed Git source, not a public-release compatibility pin",
+    "baseline_revision": "85d57d956454914a97bcf24b4c8c6e463267ef1e",
+    "later_observed_revision": "bf0203a794a07aac3ff764972ab9087baa4e4f4e",
+    "files": [
+      {
+        "path": "tui_gateway/entry.py",
+        "symbols": [
+          "_claim_launch_home",
+          "main",
+          "_serve"
+        ],
+        "finding": "Standalone stdio reserves exclusive home; product surfaces attach WS; NDJSON event envelope."
+      },
+      {
+        "path": "ui-tui/scripts/gateway_bootstrap.py",
+        "finding": "Private discovery/ensure and connection grant before WS target; external stable contract still needs qualification."
+      }
+    ]
+  },
+  "web_sources": [
+    {
+      "id": "S-T01",
+      "url": "https://docs.stencil.so/tern/",
+      "supports": [
+        "Luau packages versus Rust surface programs"
+      ]
+    },
+    {
+      "id": "S-T02",
+      "url": "https://docs.stencil.so/tern/concepts/architecture.html",
+      "supports": [
+        "Host/window VM ownership and lifecycle"
+      ]
+    },
+    {
+      "id": "S-T03",
+      "url": "https://docs.stencil.so/tern/concepts/security.html",
+      "supports": [
+        "Trusted same-user plugin permissions, no per-plugin security boundary"
+      ]
+    },
+    {
+      "id": "S-T04",
+      "url": "https://docs.stencil.so/tern/concepts/packages.html",
+      "supports": [
+        "Manifest, plugin directories and shared KV concurrency"
+      ]
+    },
+    {
+      "id": "S-T05",
+      "url": "https://docs.stencil.so/tern/protocol/handshake.html",
+      "supports": [
+        "Capability negotiation and send readiness"
+      ]
+    },
+    {
+      "id": "S-T06",
+      "url": "https://docs.stencil.so/tern/protocol/operations.html",
+      "supports": [
+        "Credits, retention, snapshots and restart limitations"
+      ]
+    },
+    {
+      "id": "S-T07",
+      "url": "https://docs.stencil.so/tern/reference/api-window.html",
+      "supports": [
+        "Window commands, layout and AgentCx"
+      ],
+      "qualification": "AgentCx ask prose differs from pinned type declarations; installed runtime probe required."
+    },
+    {
+      "id": "S-T08",
+      "url": "https://docs.stencil.so/tern/reference/cli.html",
+      "supports": [
+        "Plugin CLI and limitations of catalog ready"
+      ]
+    },
+    {
+      "id": "S-T09",
+      "url": "https://docs.stencil.so/tern/guides/debugging.html",
+      "supports": [
+        "Control endpoint, plugin errors and real window checks"
+      ]
+    },
+    {
+      "id": "S-H01",
+      "url": "https://hermes-agent.nousresearch.com/docs/developer-guide/programmatic-integration",
+      "supports": [
+        "ACP, TUI gateway, HTTP capabilities"
+      ],
+      "qualification": "Transport choice refined by pinned local source ownership/WS attach behavior."
+    },
+    {
+      "id": "S-H02",
+      "url": "https://hermes-agent.nousresearch.com/docs/developer-guide/acp-internals",
+      "supports": [
+        "ACP lifecycle, tool events and permission mapping"
+      ]
+    },
+    {
+      "id": "S-H03",
+      "url": "https://hermes-agent.nousresearch.com/docs/developer-guide/subagent-lifecycle-api",
+      "supports": [
+        "Parent-turn-bound launch and process-local lifecycle limits"
+      ]
+    },
+    {
+      "id": "S-O01",
+      "url": "https://github.com/can1357/oh-my-pi/blob/45c35e40c46166dc726ccc52f5d27f40f2449f99/docs/rpc.md",
+      "supports": [
+        "OMP custom JSONL/v2 framing, prompt results and settled-state semantics"
+      ]
+    },
+    {
+      "id": "S-O02",
+      "url": "https://github.com/can1357/oh-my-pi/blob/45c35e40c46166dc726ccc52f5d27f40f2449f99/docs/approval-mode.md",
+      "supports": [
+        "Default yolo and explicit tool-approval modes"
+      ]
+    },
+    {
+      "id": "S-O03",
+      "url": "https://api.github.com/repos/can1357/oh-my-pi/git/ref/tags/v18.12.6",
+      "supports": [
+        "Immutable source revision corresponding to inspected release tag"
+      ]
+    },
+    {
+      "id": "S-H04",
+      "url": "https://hermes-agent.nousresearch.com/docs/developer-guide/plugins",
+      "supports": [
+        "Public plugin register(ctx), tool schemas and extension boundary"
+      ]
+    },
+    {
+      "id": "S-T10",
+      "url": "https://docs.stencil.so/tern/reference/api-shared.html",
+      "supports": [
+        "Process/fetch callback lifetime and bounded whole-response semantics"
+      ]
+    }
+  ],
+  "local_cli_observations": {
+    "tern": "0.9.5 (2863c37)",
+    "omp": "18.12.6",
+    "hermes_initial": "v0.22.4+71.g85d57d9",
+    "rust_tested": "1.98.0",
+    "qualification": "Checkpoint observations only. OMP --help proves advertised modes, not RPC contract."
+  },
+  "omp_source_observation": {
+    "repository": "https://github.com/can1357/oh-my-pi",
+    "tag": "v18.12.6",
+    "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99",
+    "qualification": "Official tag lookup and pinned source inspected; no provider-backed RPC execution or binary/source-build equivalence established.",
+    "paths": [
+      "docs/rpc.md",
+      "docs/approval-mode.md",
+      "sdk/rust/omp-rpc/Cargo.toml",
+      "sdk/rust/omp-rpc/src/client.rs"
+    ],
+    "findings": [
+      "Custom JSONL, not JSON-RPC 2.0; v2 chunk validation required.",
+      "Prompt admission, prompt result and session settlement are distinct.",
+      "Default approval mode is yolo; managed integration must explicitly select restrictive policy.",
+      "Official unpublished Rust client has unbounded transport channels; cannot be adopted unchanged."
+    ]
+  },
+  "peer_tool_contract_recheck": {
+    "revision": "bf0203a794a07aac3ff764972ab9087baa4e4f4e",
+    "runtime_tested": false,
+    "files": [
+      {
+        "path": "hermes_cli/plugins.py",
+        "sha256": "a1ae6586cb5d968cb1fb6a499960c6a75e078f355ef328b5c906f73ec64aff20",
+        "bytes": 124398
+      },
+      {
+        "path": "model_tools.py",
+        "sha256": "da5b7db1b05de615658e56c4172426ed82099a093c5b586e48e65ef930b778c8",
+        "bytes": 50378
+      },
+      {
+        "path": "agent/tool_executor.py",
+        "sha256": "1b1b67d4b88f73c51dc147d0e0383b36c561d921d278d801326de5ba24b29702",
+        "bytes": 98355
+      },
+      {
+        "path": "agent/conversation_compression.py",
+        "sha256": "796494d28180659f2843599420840832e1f528ecad2110b498a59f53e34e6bcb",
+        "bytes": 249759
+      },
+      {
+        "path": "tools/registry.py",
+        "sha256": "48c3875138ac9e1875349ed2900d6940f51dfff050d655d6fb17a1dafe30f5e7",
+        "bytes": 54086
+      }
+    ],
+    "finding": "Host session_id is physical and may rotate; profile label is not canonical identity; trusted actor binding remains open."
+  },
+  "omp_startup_recheck": {
+    "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99",
+    "runtime_tested": true,
+    "runtime_scope": "minimal installed ready/negotiate-v2/get_state/EOF only;no inference or managed adapter",
+    "release_identity": {
+      "version": "18.12.6",
+      "asset_id": 663781494,
+      "bytes": 256702432,
+      "sha256": "85d9daf3a05fc76e8cd425ae1904eb576af8d21cc85fcf4690742626e07ccfa4",
+      "url": "https://api.github.com/repos/can1357/oh-my-pi/releases/tags/v18.12.6",
+      "qualification": "Installed size/digest match official asset;not source-build reproducibility"
+    },
+    "files": [
+      {
+        "path": "docs/cli-reference.md",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/docs/cli-reference.md",
+        "sha256": "21b847f6875617e4457a65a0ada3b952acf9b2a63c185b603735f585189ac602",
+        "bytes": 19383
+      },
+      {
+        "path": "packages/coding-agent/src/main.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/coding-agent/src/main.ts",
+        "sha256": "55e9f8e7c2ad555b4f825a7acfa02c77a6e72c5320a6da03104fdd573d5da478",
+        "bytes": 113530
+      },
+      {
+        "path": "packages/coding-agent/src/config/model-registry.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/coding-agent/src/config/model-registry.ts",
+        "sha256": "d0c3d89139b3f86180fe2f48d625a14d6f98e74ea2496a74efb516dbd766dbba",
+        "bytes": 161101
+      }
+    ],
+    "finding": "Noninteractive startup requires a model;discovery/prewarm means no-inference does not imply network isolation. Parent separately tested network namespace then execed the pinned binary in fresh private HOME/cwd. Ready\u2192negotiate v2\u2192get_state\u2192EOF/exit0 passed;available_commands_update precedes response (rpc-mode.ts1753-1759). State zero messages/tools,settled/no pending work. General RPC/chunk/provider/native lane not qualified."
+  },
+  "omp_native_handoff": {
+    "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99",
+    "window_runtime_tested": false,
+    "files": [
+      {
+        "path": "packages/coding-agent/src/modes/controllers/input-controller.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/coding-agent/src/modes/controllers/input-controller.ts",
+        "sha256": "a706217c5a319e2c3df03638f0de2a9e4c6f82098719bb95dc0eb40b53a828e6",
+        "bytes": 122173,
+        "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99"
+      },
+      {
+        "path": "packages/tui/src/components/editor.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/tui/src/components/editor.ts",
+        "sha256": "5dbe6905c4c65a0137ca98c5cd08f60eae34a9eec91e8bcac9cee712052e136c",
+        "bytes": 195275,
+        "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99"
+      },
+      {
+        "path": "packages/tui/src/native/backend.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/tui/src/native/backend.ts",
+        "sha256": "cd45bd2c4e9144d430f5e5159e09db02875e07c06e68abf2cb560a3fe70a87a9",
+        "bytes": 34775,
+        "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99"
+      },
+      {
+        "path": "packages/tui/src/native/reconcile.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/tui/src/native/reconcile.ts",
+        "sha256": "5caa37580bc421017c47bae5d67d429908c83165a1a9d75d1ad51fb59f804a30",
+        "bytes": 41280,
+        "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99"
+      },
+      {
+        "path": "packages/tui/src/prompt/custom-editor.ts",
+        "url": "https://raw.githubusercontent.com/can1357/oh-my-pi/45c35e40c46166dc726ccc52f5d27f40f2449f99/packages/tui/src/prompt/custom-editor.ts",
+        "sha256": "bd7704a93644e27534dc131d8d2dd67663061d89a47127711607881894bc63f9",
+        "bytes": 79649,
+        "revision": "45c35e40c46166dc726ccc52f5d27f40f2449f99"
+      }
+    ],
+    "findings": [
+      "ordinary composer uses inline surface;screen is fullscreen overlay",
+      "Reconciler always adds main/dock/layer,even empty;detachLive drops dock/layer",
+      "editor nativeSendable gates submit;host ask can queue and has no expected incarnation parameter",
+      "snapshot suitability does not authenticate a durable actor or guarantee conditional dispatch"
+    ],
+    "qualification": "pinned source plus actual Luau synthetic callbacks only;installed window and provider behavior unrun"
+  },
+  "luau_test_tool": {
+    "version": "0.743",
+    "platform": "Linux x86-64",
+    "archive_url": "https://github.com/luau-lang/luau/releases/download/0.743/luau-ubuntu.zip",
+    "archive_sha256": "99d45afb4afaee00ba631c526c8e8c76c67b60f6f119953ce6409be6d6953663",
+    "binary_sha256": "416fec2184d0bd238be24721f0369ec1d38b09da21032d6845e5f6648f69f2f8",
+    "qualification": "official release archive/binary verified in private cache;standalone VM,not Tern host API execution"
+  }
+}

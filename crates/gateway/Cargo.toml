@@ -1,0 +1,17 @@
+[package]
+name = "hermes-tern-gateway"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Bounded attach-only Hermes gateway client and session state"
+
+[dependencies]
+hermes-tern-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tungstenite.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

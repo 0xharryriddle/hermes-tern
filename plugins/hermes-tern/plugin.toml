@@ -1,0 +1,6 @@
+schema = 1
+id = "hermes-tern"
+name = "Hermes for Tern"
+version = "0.1.0"
+description = "Open the hermes-tern Rust SDK preview; live agents are not connected yet."
+window = "window.luau"

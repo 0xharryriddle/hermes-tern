@@ -1,0 +1,19 @@
+[package]
+name = "hermes-tern-cli"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Hermes for Tern command parsing and subsystem composition"
+
+[dependencies]
+hermes-tern-core.workspace = true
+hermes-tern-gateway.workspace = true
+hermes-tern-ui.workspace = true
+hermes-tern-store.workspace = true
+hermes-tern-supervisor.workspace = true
+hermes-tern-omp.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true
