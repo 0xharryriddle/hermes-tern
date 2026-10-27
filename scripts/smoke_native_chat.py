@@ -21,7 +21,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins")
+CASES = ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins", "reasoning")
 KEYBOARD_CASES = ("keyboard-output", "keyboard-reduced")
 KEYBOARD_DRAFT = "keyboard draft remains"
 # Keep normalized text below the measured Tern tree text cap while exceeding
@@ -86,6 +86,9 @@ class ScenarioGateway(fixtures.Gateway):
                 {"name":"fx-read","description":"Read"},
                 {"name":"fx-list","description":"List"}]}],"total":2}
         if method == "session.create":
+            if self.case == "reasoning":
+                result["messages"] = [{"row_id":1,"role":"user","text":"Review the parser."},
+                    {"row_id":2,"role":"assistant","reasoning_content":"Check the parser first.","text":"Retained answer."}]
             if self.case == "model-picker":
                 result["info"].update(self.model_route)
             if self.case == "runtime-details":
@@ -198,7 +201,12 @@ def scenario(case, command, stderr):
                 'click ".ht-plan-entry"\nplugins expect "1 reported tasks"\nshot plan\n'
                 'click ".ht-runtime-return"\nplugins expect "Hermes / fixture-session"\n'
                 'shot returned\nclick ".ht-controls>button:nth-of-type(2)"\nexpect "HT_CLIENT_EXIT_0"\n', ["runtime","delegated","plan","returned"])
-    if case in KEYBOARD_CASES:
+    if case == "reasoning":
+        text += ('plugins expect "Show reasoning"\ntype "reasoning draft remains"\nshot collapsed\n'
+                 'click ".ht-reasoning>.ht-transcript-toggle"\nplugins expect "Hide reasoning"\nshot expanded\n'
+                 'click ".ht-reasoning>.ht-transcript-toggle"\nplugins expect "Show reasoning"\nshot refolded\n')
+        shots = ["collapsed", "expanded", "refolded"]
+    elif case in KEYBOARD_CASES:
         text += ('plugins expect "Show retained text"\ntype ' + json.dumps(KEYBOARD_DRAFT) + '\n'
                  'key Tab\nshot selected\nkey Enter\nplugins expect "Collapse retained text"\nshot expanded\n'
                  'key Space\nplugins expect "Show retained text"\nshot refolded\nkey Escape\n')
@@ -664,6 +672,20 @@ def ready_projection(case, shot, editor, controls):
     return controls.get("count") == len(expected) and [n.get("text") for n in controls.get("nodes", [])] == expected
 
 
+def reasoning_ready(shot, body, toggle, answer, editor, controls):
+    if shot not in ("collapsed", "expanded", "refolded"):
+        return False
+    def exact(tree, texts):
+        return (tree.get("ok") is True and tree.get("count") == len(texts)
+                and len(tree.get("nodes", [])) == len(texts)
+                and [node.get("text") for node in tree["nodes"]] == texts)
+    return (exact(body, ["Check the parser first."] if shot == "expanded" else [])
+            and exact(toggle, ["Hide reasoning" if shot == "expanded" else "Show reasoning"])
+            and exact(answer, ["Retained answer."])
+            and exact(editor, ["reasoning draft remainsinsert"])
+            and exact(controls, ["Send", "Detach"]))
+
+
 def long_output_ready(shot, body, buttons):
     if shot not in ("folded", "expanded", "refolded"):
         return False
@@ -863,6 +885,20 @@ def drive_control(endpoint, text, case, theme, size, record, profiles=None):
                         time.sleep(0.02)
                         continue
                     controls = call("tree .ht-controls>button")
+                    if case == "reasoning":
+                        body = call("tree .ht-reasoning>[data-id$='.body']")
+                        toggle = call("tree .ht-reasoning>.ht-transcript-toggle")
+                        answer = call("tree .ht-assistant>[data-id$='.body']")
+                        panel = call("tree .sf-main")
+                        record["last_readiness"] = {"shot":shot,"body":body,"toggle":toggle,
+                            "answer":answer,"editor":editor,"controls":controls,"panel":panel}
+                        if (reasoning_ready(shot,body,toggle,answer,editor,controls)
+                                and command_output_visible(answer,panel,width,height)
+                                and (shot != "expanded" or command_output_visible(body,panel,width,height))):
+                            record["projections"].append(record["last_readiness"])
+                            break
+                        time.sleep(0.02)
+                        continue
                     if case == "plugins":
                         fields = (call("tree [data-id='main.commands.plugin-profile'],[data-id='main.commands.plugin-owner'],[data-id='main.commands.plugin-disclosure'],.ht-command-read")
                                   if shot == "plugins" else call("tree [data-id='main.commands.output']") if shot == "output" else {})
@@ -945,7 +981,7 @@ def drive_control(endpoint, text, case, theme, size, record, profiles=None):
                     extra = {}
                     text_ready = True
                     if case == "long-output" or case in KEYBOARD_CASES:
-                        extra = {"body": call("tree .sf-main>.sf-col>.sf-text:last-child"),
+                        extra = {"body": call("tree .ht-message>[data-id$='.body']"),
                                  "toggle": call("tree .ht-transcript-toggle")}
                         text_ready = long_output_ready(shot, extra["body"], extra["toggle"])
                     if case in KEYBOARD_CASES:

@@ -4,6 +4,8 @@ Status: implementation authorized; connected client, local coordination and phys
 
 ## Milestones and release gates
 
+Current owner priority is the focused TUI repair, not another recovery/load tranche. Native-entry checkpoint `db9a544` is pushed. Reasoning blocks and Commands/F4 compatibility are implemented locally: 429 Rust/383 Python, two live ignored, zero ResourceWarning; all 80 native synthetic width/theme cases/212 image-layout pairs pass with exact hashes and cleanup checked. Existing-owner read-only metadata confirms the repaired parser accepts its 545-command catalog. The personal installed binary has not yet received this repair. Pixel inspection returned HTTP402, final repaired source has author verification rather than independent approval, and real-window/provider qualification remains open. T-03/T-07 and the wider product roadmap are not closed by this slice. See [current build status](STATUS.md) for failed generations and review remediation.
+
 | Milestone | Scope | Required tasks | Exit gate |
 | --- | --- | --- | --- |
 | M0 | Buildable SDK preview, thin launcher package and complete docs baseline | T-01, T-02 | Local gate and real preview render pass; launcher live-window status remains explicit |

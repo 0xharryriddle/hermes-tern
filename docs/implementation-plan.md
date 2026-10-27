@@ -10,6 +10,12 @@ Tech stack: Rust 2024 / Rust 1.98.0, pinned tern-sdk, serde/serde_json, tungsten
 
 Spec: [architecture](architecture.md), [Hermes integration](hermes-integration.md), [product requirements](product.md), [security](security.md), [verification](verification.md).
 
+### Current owner-directed TUI repair
+
+The 2026-10-27 owner request explicitly authorizes commit/push and a PR if the current branch feature is complete, then prioritizes reasoning blocks and the Commands/F4 failure. Checkpoint `db9a544` is committed/pushed with exact remote readback. This scoped request supersedes the historical continuation-push timeout below; it does not authorize Hermes restart/core edits, provider spending, personal settings/DB writes or unrelated recovery/OMP/load work. The earlier explicit Tern installation authorization is recorded separately; the current installed binary is not silently replaced by a source build.
+
+Implemented with observed RED/GREEN: accept bounded namespaced/Unicode command metadata without widening the builtin read allowlist; discard unsupported descriptions instead of rejecting healthy catalogs for ordinary skill prose; render owner-supplied streaming/history reasoning as separate collapsed local blocks; preserve whitespace and open state across token appends; retain fallback blocks across tool responses without duplicate same-response fallback. A read-only source reviewer found the fallback scope defect; parent reproduced and repaired it. Current frozen verification passes 429 Rust/383 Python and 80 native synthetic cases/212 pairs, with 264 source witnesses and all pair/log hashes checked. No dependency/lock/SDK/upstream changes. Pixel service HTTP402 and real-window/provider acceptance remain open, as does independent postfix approval. Update STATUS/ROADMAP/tasks and run the canonical postdocs gate before committing the repair; do not relabel the whole native/product roadmap complete merely to create a PR.
+
 Status: implementation authorized by the owner after presentation of this plan. File and package paths below are updated for the owner-directed workspace split. Checkboxes retain the original acceptance sequence, not current task state; [STATUS](STATUS.md) and [tasks.json](tasks.json) report measured implementation and open gates. The owner subsequently authorized the initial source/docs commit and push to `https://github.com/0xharryriddle/hermes-tern`, then continued native implementation. Personal-runtime reconfiguration and provider-budget gates remain separate.
 
 ## Global constraints

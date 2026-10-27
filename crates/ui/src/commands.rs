@@ -101,7 +101,7 @@ impl CommandPanel {
                 .child(ui::text("Profile-wide read; initial discovery may load/register plugins and refresh secret sources.").key("plugin-disclosure"));
         }
         panel = panel
-            .child(ui::text("Explicit owner reads only. /tools reads tool metadata. /plugins reads this owner's profile inventory; initial discovery may load/register profile plugins. Other allowed built-ins run handlers and hooks. No automatic prompt, plugin command, install/toggle or configuration write. Reports are not health or permission.").key("scope"))
+            .child(ui::text("Owner reads only. /tools: metadata. /plugins: profile inventory; discovery may load plugins. Other built-ins run hooks. No prompt or config writes.").key("scope"))
             .child(ui::text(c.notice).key("status"));
         if let Some(output) = c.output().get(self.output_page) {
             panel=panel.child(ui::text(format!("Owner output · chunk {}/{} · at most 4096 bytes/chunk",self.output_page+1,c.output().len())).key("output-page"))

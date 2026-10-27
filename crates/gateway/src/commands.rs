@@ -46,9 +46,12 @@ impl Catalog {
                     s.len() > 1
                         && s.len() <= 128
                         && s.starts_with('/')
-                        && s[1..]
-                            .bytes()
-                            .all(|b| b.is_ascii_alphanumeric() || b"-_".contains(&b))
+                        && s[1..].split(':').all(|part| {
+                            !part.is_empty()
+                                && part
+                                    .chars()
+                                    .all(|c| c.is_alphanumeric() || matches!(c, '-' | '_'))
+                        })
                 })
                 .ok_or(Error::Protocol("invalid command name"))?;
             if !seen.insert(name.to_owned()) {
@@ -56,7 +59,7 @@ impl Catalog {
             }
             let label = pair[1]
                 .as_str()
-                .filter(|s| s.len() <= 1024)
+                .filter(|s| s.len() <= 65536)
                 .ok_or(Error::Protocol("invalid command label"))?;
             let readable = matches!(
                 name,
@@ -76,6 +79,9 @@ impl Catalog {
                 && metadata[1].get(name).is_some_and(Value::is_object)
                 && !metadata[2].contains_key(name)
                 && !metadata[3].contains_key(&name[1..]);
+            if readable && label.len() > 1024 {
+                return Err(Error::Protocol("oversized builtin command label"));
+            }
             rows.push(Row {
                 name: name.into(),
                 label: if readable {

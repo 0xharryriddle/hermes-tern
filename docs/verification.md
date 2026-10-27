@@ -2,6 +2,8 @@
 
 Status: bootstrap checks are executable. Runtime scenario rows are acceptance specifications, not passing tests. [STATUS](STATUS.md) and [verification.json](verification.json) record the current measured checkpoint.
 
+Current focused TUI repair: `./verify.sh` passes 429 Rust/383 Python, two live opt-ins ignored, zero ResourceWarning. The production-client/real-Tern synthetic-owner matrix passes all 80 exact width/theme cases and 212 image-layout pairs; parent readback checks every pair/log hash, integer-zero client exits, joined gateways and reaped recorded process groups. Source count264 is frozen through execution. Existing-owner metadata selector parses the full 545-command catalog without session mutation or handler dispatch; it does not prove installed-window/provider behavior. Reasoning stream/history and local folds are covered by `crates/gateway/tests/reasoning.rs`, `crates/ui/tests/reasoning.rs` and `tests/test_reasoning.py`; namespaced/Unicode/long-description catalog compatibility and F4/click paths are covered by Commands tests. Source review found one cross-tool fallback-dedup defect; parent Rust/productionPTY RED→GREEN remediates it, not independent postfix approval. Earlier native spacing and matrix-allowlist failures are retained. Pixel service HTTP402 leaves visual acceptance open; the personal installed binary remains the earlier checkpoint. Documentation-only verification follows separately. Older campaign totals below are historical scoped evidence, not current-source totals.
+
 ## Evidence classes
 
 | Class | Establishes | Does not establish |

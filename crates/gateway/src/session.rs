@@ -112,6 +112,9 @@ pub struct SessionState {
     own_admission: Option<String>,
     stream_id: Option<String>,
     segment: u64,
+    reasoning_id: Option<String>,
+    reasoning_segment: u64,
+    observed_reasoning: bool,
     observed_completion: Option<String>,
     completed: VecDeque<String>,
 }
@@ -227,6 +230,9 @@ impl SessionState {
             own_admission: None,
             stream_id: None,
             segment: 0,
+            reasoning_id: None,
+            reasoning_segment: 0,
+            observed_reasoning: false,
             observed_completion: None,
             completed: VecDeque::new(),
         };
@@ -246,6 +252,12 @@ impl SessionState {
                 .as_u64()
                 .map(|n| format!("row-{n}"))
                 .unwrap_or_else(|| format!("history-{n}"));
+            if role == "assistant" {
+                let reasoning = crate::reasoning::history_text(row);
+                if !reasoning.trim().is_empty() {
+                    s.push(format!("reasoning-{key}"), "reasoning", &reasoning);
+                }
+            }
             if !text.is_empty() {
                 s.push(key, role, &text);
             }
@@ -396,6 +408,9 @@ impl SessionState {
             self.prompts.clear();
             self.stream_id = None;
             self.segment = 0;
+            self.reasoning_id = None;
+            self.reasoning_segment = 0;
+            self.observed_reasoning = false;
             self.observed_completion = None;
         }
     }
@@ -453,6 +468,41 @@ impl SessionState {
         self.task_plan.invalidate();
         vec![Action::Snapshot]
     }
+    fn close_reasoning(&mut self) {
+        if self.reasoning_id.take().is_some() {
+            self.reasoning_segment = self.reasoning_segment.saturating_add(1);
+        }
+    }
+    fn update_reasoning(&mut self, admission: &str, text: &str, fallback: bool) {
+        if text.is_empty() || (fallback && (self.observed_reasoning || text.trim().is_empty())) {
+            return;
+        }
+        self.observed_reasoning = true;
+        let continued = self.reasoning_id.is_some();
+        let key = self
+            .reasoning_id
+            .get_or_insert_with(|| {
+                format!(
+                    "reasoning-{}-{admission}-{}",
+                    self.generation, self.reasoning_segment
+                )
+            })
+            .clone();
+        if let Some(row) = self.messages.iter_mut().find(|m| m.id == key) {
+            if row.truncated {
+                return;
+            }
+            // Appending to the same reasoning block must not collapse an open
+            // local inspector. Replacements still mint a new control identity.
+            let (text, truncated) = bounded_text(&format!("{}{text}", row.text), TEXT_BYTES);
+            row.text = text;
+            row.truncated = truncated;
+            self.display_truncated |= row.truncated;
+            self.enforce_display_budget();
+        } else if !continued {
+            self.push(key, "reasoning", text);
+        }
+    }
     pub fn apply(&mut self, inbound: Inbound) -> Result<Vec<Action>> {
         match inbound {
             Inbound::Disconnected => {
@@ -499,6 +549,8 @@ impl SessionState {
                 | "message.delta"
                 | "message.interim"
                 | "message.complete"
+                | "reasoning.delta"
+                | "reasoning.available"
                 | "approval.request"
                 | "clarify.request"
                 | "approval.settled"
@@ -515,8 +567,11 @@ impl SessionState {
             // execution authority. session.updated is consumed by the driver.
             return Ok(vec![]);
         }
-        if e.kind == "todo.updated"
-            && (e.authority_epoch != Some(self.authority_epoch) || e.generation.is_none())
+        if (e.kind == "todo.updated"
+            && (e.authority_epoch != Some(self.authority_epoch) || e.generation.is_none()))
+            || (matches!(e.kind.as_str(), "reasoning.delta" | "reasoning.available")
+                && (e.authority_epoch != Some(self.authority_epoch)
+                    || e.generation != Some(self.generation)))
         {
             // An optional display frame cannot acquire generation authority
             // merely because the generic event path accepts absent fences.
@@ -540,7 +595,11 @@ impl SessionState {
         if self.completed.iter().any(|id| id == admission)
             && matches!(
                 e.kind.as_str(),
-                "message.start" | "message.delta" | "message.interim"
+                "message.start"
+                    | "message.delta"
+                    | "message.interim"
+                    | "reasoning.delta"
+                    | "reasoning.available"
             )
         {
             return Ok(vec![]);
@@ -558,7 +617,13 @@ impl SessionState {
                 self.running = true;
                 self.status = "running".into();
             }
+            "reasoning.delta" | "reasoning.available" => {
+                if let Some(text) = p["text"].as_str() {
+                    self.update_reasoning(admission, text, e.kind == "reasoning.available");
+                }
+            }
             "message.delta" => {
+                self.close_reasoning();
                 self.running = true;
                 if let Some(text) = p["text"].as_str() {
                     self.update_stream(admission, text, false);
@@ -570,6 +635,7 @@ impl SessionState {
                 }
             }
             "message.interim" => {
+                self.close_reasoning();
                 if p["already_streamed"] != true
                     && let Some(text) = p["text"].as_str()
                 {
@@ -579,6 +645,7 @@ impl SessionState {
                 self.segment = self.segment.saturating_add(1);
             }
             "message.complete" => {
+                self.close_reasoning();
                 if p["response_reused"] != true
                     && let Some(text) = p["text"].as_str()
                     && !text.is_empty()
@@ -631,6 +698,11 @@ impl SessionState {
                 }
             }
             "tool.start" | "tool.complete" => {
+                self.close_reasoning();
+                // Fallbacks are per assistant response, not per whole turn.
+                // Keep duplicate suppression across answer chunks, but a tool
+                // boundary starts the next response's reasoning scope.
+                self.observed_reasoning = false;
                 let tool = id(p, "tool_id")?;
                 let key = format!("tool-{}-{tool}", self.generation);
                 let text = format!(

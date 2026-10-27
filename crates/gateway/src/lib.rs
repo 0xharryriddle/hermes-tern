@@ -15,6 +15,7 @@ pub mod models;
 pub mod plugin_catalog;
 pub mod profiles;
 pub mod protocol;
+mod reasoning;
 pub mod session;
 pub mod task_plan;
 pub mod tool_catalog;

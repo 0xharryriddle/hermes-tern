@@ -1,6 +1,26 @@
 {
   "schema_version": 1,
-  "checkpoint": "closed-v2-archive-DDL-full-local-author-verified-not-restoration",
+  "checkpoint": "focused-TUI-reasoning-commands-local-native-verified-not-live-window-acceptance",
+  "current_ui_repair": {
+    "status":"local_and_native_synthetic_verified_not_product_complete",
+    "date":"2026-10-27",
+    "scope":"conversation_reasoning_and_Commands_F4_compatibility_only",
+    "pushed_checkpoint":"db9a544c9ca59d683de9dd552855c5c9fe4bccb8;remote_verified",
+    "full_local":{"command":"./verify.sh","rust_passed":429,"python_passed":383,"live_ignored":2,"ResourceWarning":0,"source_witnesses":264,"drift":false},
+    "native":{"command":"python3 -B scripts/smoke_native_chat.py --out NEW_PRIVATE_DIR","cases":80,"image_layout_pairs":212,"exact_case_set_checked":true,"all_pair_and_log_hashes_match":true,"integer_zero_client_exits":80,"gateway_threads_joined":true,"gateway_errors":[],"recorded_children_reaped":true,"remaining_owned_groups":[],"scope":"real_Tern_production_client_synthetic_owner_not_live_or_personal_plugin"},
+    "owner_catalog":{"read_only_optin":"inspect_capability_handshake_metadata","rows":545,"old_parser_rejected_namespaced_skills":16,"old_parser_rejected_skill_description_bytes":1038,"raw_payload_retained":false,"session_mutation":false,"handler_dispatch":false,"provider_call":false},
+    "reasoning":{"sources":["reasoning.delta","reasoning.available","assistant.reasoning","assistant.reasoning_content","recognized_top_level_reasoning_details"],"local_collapsed_default":true,"tokens_preserve_expansion":true,"whitespace_preserved":true,"tool_separated_fallback_retained":true,"same_response_fallback_deduplicated":true,"opaque_replay_rendered":false,"provider_policy_changed":false},
+    "review":{"id":"deleg_49dfef6f","source_hashes_parent_matched":12,"finding":"per_generation_fallback_dedup_dropped_second_tool_response","parent_Rust_and_productionPTY_RED_GREEN":true,"reviewer_test_execution":false,"independent_postfix_approval":false},
+    "retained_failures":["first_native_long_output_main_y_minus28_spacing_repaired_not_geometry_relaxed","first_full_Rust_pass_Python382_two_matrix_contract_errors_then_exact80case_validator_repaired","stream_whitespace_and_open_block_identity_RED_GREEN","review_tool_fallback_Rust_and_PTY_RED_GREEN"],
+    "historical_pre_review_fix":{"rust_passed":428,"python_passed":382,"native_cases":80,"image_layout_pairs":212},
+    "binary_sha256":"5d1cc97f913856fffd0527dd4c4bfb8e4652bb26244d659dc3adaf310fd68bdb",
+    "postdocs_verification":"separate_from_frozen_campaign",
+    "pixel_review":"HTTP402_not_established",
+    "personal_installed_binary_updated":false,
+    "Hermes_restart_settings_DB_provider_changes":false,
+    "PR":"conditional_not_created_while_native_feature_acceptance_open",
+    "product_complete":false
+  },
   "current_personal_Tern_install": {
     "date":"2026-10-27",
     "status":"explicit_owner_authorized_installed_and_readback_verified",

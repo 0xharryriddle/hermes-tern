@@ -294,11 +294,12 @@ class RuntimeAutorunTests(unittest.TestCase):
                  "control": {"status": "passed", "projections": [{"editor": "synthetic-checker-control"}]},
                  "selected_gateway_thread_joined": True, "selected_gateway_errors": [],
                  "renderer": {"status": "passed", "exit_code": 0, "reaped": True}}
-                for c in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins")
+                for c in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins", "reasoning")
                 for s in ("1100x760", "480x760") for t in ("light", "dark")]
-        good = {"status": "passed", "expected_cases": 76, "cases": rows}
+        good = {"status": "passed", "expected_cases": 80, "cases": rows}
         runner.validate_native_report(good)
         for bad in [{"status": "passed", "expected_cases": 0, "cases": []},
+                    {"status": "passed", "expected_cases": 76, "cases": [r for r in rows if r["case"] != "reasoning"]},
                     {**good, "cases": rows[:-1]}, {**good, "cases": [rows[0]] * 68},
                     {"status": "passed", "expected_cases": 64, "cases": [r for r in rows if r["case"] != "attachments"]},
                     {"status": "passed", "expected_cases": 60, "cases": [r for r in rows if r["case"] != "commands"]},

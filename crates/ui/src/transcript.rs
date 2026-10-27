@@ -174,7 +174,7 @@ pub fn validate_row(state: &SessionState, id: &str, control_id: &str) -> Result<
         .ok_or(Error::Protocol("transcript row no longer retained"))?;
     if rows.next().is_some()
         || row.control_id != control_id
-        || preview(&row.text).len() == row.text.len()
+        || (row.role != "reasoning" && preview(&row.text).len() == row.text.len())
     {
         return Err(Error::Protocol(
             "transcript row changed; use current controls",

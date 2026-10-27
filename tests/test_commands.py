@@ -24,6 +24,9 @@ class CommandTests(unittest.TestCase):
         def reply(request,result):
             if request["method"]=="commands.catalog":
                 result=catalog()
+                if mode=="canonical-skills":
+                    result["pairs"].extend([["/plugin:review","x"*1038],["/小说拆条","Skill"]])
+                    result["skills"].update({"/plugin:review":{},"/小说拆条":{}})
                 if mode=="malformed":result["pairs"].append(result["pairs"][0])
                 if mode=="unavailable":
                     g.send({"jsonrpc":"2.0","id":request["id"],"error":{"code":-32601,"message":"PRIVATE unavailable","data":{"reason":"unsupported_method"}}})
@@ -56,6 +59,24 @@ class CommandTests(unittest.TestCase):
         self.assertFalse(f.gateway.methods("prompt.submit"))
         self.assertFalse(f.gateway.methods("session.mutate"))
         self.assertEqual(termios.tcgetattr(f.slave),f.original_termios)
+
+    def test_f4_and_pointer_accept_owner_namespaced_skills_without_dispatching_them(self):
+        for keyboard in (True,False):
+            with self.subTest(keyboard=keyboard):
+                f=self.fixture("canonical-skills")
+                f.send(b"\x1b[200~preserve draft\x1b[201~")
+                f.until(lambda:f.nodes.get("dock.ed",{}).get("text")=="preserve draft","draft")
+                if keyboard:f.send(b"\x1bOS")
+                else:f.click("dock.navigation.commands")
+                node=self.read_node(f)
+                self.assertFalse(any(p.get("text")=="Command catalog unavailable or malformed" for p in f.nodes.values()))
+                self.assertFalse(f.gateway.methods("command.dispatch"))
+                f.click(node)
+                f.until(lambda:f.nodes.get("main.commands.output",{}).get("text")=="fixture-owner-memory","read output")
+                self.assertEqual(f.nodes["dock.ed"]["text"],"preserve draft")
+                self.assertEqual(len(f.gateway.methods("commands.catalog")),1)
+                self.assertEqual(len(f.gateway.methods("command.dispatch")),1)
+                self.close(f)
 
     def test_explicit_catalog_and_pointer_read_keep_draft_and_never_auto_submit(self):
         f=self.fixture();self.assertFalse(f.gateway.methods("commands.catalog"))

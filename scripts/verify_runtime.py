@@ -164,7 +164,7 @@ def gate_status(required, rows):
 
 def validate_native_report(data):
     expected = {(case, size, theme)
-                for case in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins")
+                for case in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins", "reasoning")
                 for size in ("1100x760", "480x760") for theme in ("light", "dark")}
     rows = data.get("cases", [])
     identities = [(r.get("case"), r.get("size"), r.get("theme")) for r in rows]

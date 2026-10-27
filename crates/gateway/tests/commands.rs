@@ -40,6 +40,51 @@ fn malformed_duplicate_nonexact_and_oversized_catalogs_refuse() {
     assert!(!Catalog::parse(v).unwrap().rows[0].readable);
 }
 #[test]
+fn namespaced_and_unicode_skills_with_long_descriptions_do_not_disable_builtin_reads() {
+    let value = json!({
+        "pairs":[["/memory","Memory"],["/plugin:review","x".repeat(1038)],["/小说拆条","Skill"]],
+        "canon":{"/memory":"/memory"},"commands":{"/memory":{}},
+        "skills":{"/plugin:review":{},"/小说拆条":{}},"plugin_commands":{}
+    });
+    let catalog = Catalog::parse(value.clone())
+        .expect("canonical skill metadata must not disable owner reads");
+    assert_eq!(catalog.rows.len(), 3);
+    assert!(catalog.rows[0].readable);
+    for row in &catalog.rows[1..] {
+        assert!(!row.readable);
+        assert_eq!(row.label, "Not supported in this panel");
+    }
+    let s = state();
+    let mut commands = Commands::default();
+    let id = commands.loading(&s).unwrap();
+    commands.loaded(&s, &id, value).unwrap();
+    assert!(commands.read(&s, &id, 1).is_err());
+    let request = commands.read(&s, &id, 0).unwrap();
+    assert_eq!(
+        request.params,
+        json!({"session_id":"s","name":"memory","arg":""})
+    );
+}
+
+#[test]
+fn untrusted_catalog_names_and_unsupported_descriptions_remain_bounded() {
+    for name in [
+        "/plugin:review\n",
+        "/tool\u{202e}read",
+        "/has space",
+        "/../status",
+        "/:review",
+    ] {
+        let mut value = catalog();
+        value["pairs"][3][0] = json!(name);
+        assert!(Catalog::parse(value).is_err(), "accepted invalid identity");
+    }
+    let mut value = catalog();
+    value["pairs"][3][1] = json!("x".repeat(65537));
+    assert!(Catalog::parse(value).is_err());
+}
+
+#[test]
 fn command_read_is_catalog_and_owner_bound_and_output_never_becomes_a_prompt() {
     let mut s = state();
     let mut c = Commands::default();

@@ -29,6 +29,19 @@ fn inspect_capability_handshake_metadata() {
             hermes_tern_gateway::protocol::Inbound::Response { id, result } => {
                 assert_eq!(id, expected);
                 assert!(result.is_ok());
+                let catalog = inspect::call(
+                    &mut client,
+                    "commands.catalog",
+                    json!({}),
+                    limits.request_timeout,
+                )
+                .unwrap();
+                let projected = hermes_tern_gateway::commands::Catalog::parse(catalog).unwrap();
+                assert!(projected.rows.iter().any(|row| row.readable));
+                println!(
+                    "Owner command catalog parsed: {} rows; no handler dispatch",
+                    projected.rows.len()
+                );
                 client.close();
                 return;
             }

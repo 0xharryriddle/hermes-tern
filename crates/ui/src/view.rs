@@ -10,7 +10,7 @@ use tern_sdk::{
     nodes,
     ui::{self, View},
 };
-pub const STYLE: &str = ".ht-button{padding:4px 10px;margin:4px 8px 4px 0;border-radius:3px;background:var(--l2)} .ht-controls,.ht-navigation{display:flex;gap:8px;align-items:center;flex-wrap:wrap} .ht-navigation .ht-button{padding:4px;margin-right:0} .ht-keyboard-focus{outline:2px dashed var(--accent);outline-offset:2px} .ht-keyboard-ready{outline-style:solid} .ht-runtime-panel{max-height:55vh;overflow:auto} .ht-runtime-list{max-height:35vh;overflow:auto}";
+pub const STYLE: &str = ".ht-button{padding:4px 10px;margin:4px 8px 4px 0;border-radius:3px;background:var(--l2)} .ht-controls,.ht-navigation{display:flex;gap:8px;align-items:center;flex-wrap:wrap} .ht-navigation .ht-button{padding:4px;margin-right:0} .ht-keyboard-focus{outline:2px dashed var(--accent);outline-offset:2px} .ht-keyboard-ready{outline-style:solid} .ht-runtime-panel{max-height:55vh;overflow:auto} .ht-runtime-list{max-height:35vh;overflow:auto} .ht-message{display:flex;flex-direction:column;gap:0;padding:4px 10px;margin:0;border-left:2px solid var(--l2)} .ht-message>[data-role=message-role]{font-size:12px;text-transform:uppercase;opacity:.65} .ht-user{border-left-color:var(--accent)} .ht-tool{padding:0;border:0} .ht-reasoning{border-left-width:1px} .ht-reasoning>.ht-button{font-size:12px;background:transparent;padding:2px 0;margin:0} .ht-reasoning>[data-role=message-body]{opacity:.75}";
 #[derive(Clone, Debug)]
 pub enum UiAction {
     Send(String),
@@ -258,18 +258,30 @@ pub fn render_with_submission(
         );
     }
     for m in &state.messages {
+        let reasoning = m.role == "reasoning";
         let prefix = transcript::preview(&m.text);
-        let foldable = prefix.len() < m.text.len();
+        let foldable = reasoning || prefix.len() < m.text.len();
         let expanded = foldable && transcript.is_expanded(&m.id, &m.control_id);
-        let mut row = ui::col()
+        let mut row = ui::html::div()
             .key(m.id.clone())
-            .child(ui::text(m.role.clone()).key("role"));
+            .class(match m.role.as_str() {
+                "reasoning" => "ht-message ht-reasoning",
+                "user" => "ht-message ht-user",
+                "assistant" => "ht-message ht-assistant",
+                _ => "ht-message ht-tool",
+            })
+            .child(
+                ui::text(if reasoning { "Reasoning" } else { &m.role })
+                    .role("message-role")
+                    .key("role"),
+            );
         if foldable {
             row = row.child(
-                ui::html::button(if expanded {
-                    "Collapse retained text"
-                } else {
-                    "Show retained text"
+                ui::html::button(match (reasoning, expanded) {
+                    (true, true) => "Hide reasoning",
+                    (true, false) => "Show reasoning",
+                    (false, true) => "Collapse retained text",
+                    (false, false) => "Show retained text",
                 })
                 .class(if transcript.is_selected(&m.id, &m.control_id) {
                     if transcript.keyboard_ready() {
@@ -292,20 +304,28 @@ pub fn render_with_submission(
                     expand: !expanded,
                 }),
             );
+            if !reasoning {
+                row = row.child(
+                    ui::text(if expanded {
+                        format!("Showing {} retained bytes; local view only.", m.text.len())
+                    } else {
+                        format!(
+                            "Preview: {} of {} retained bytes; expand to inspect.",
+                            prefix.len(),
+                            m.text.len()
+                        )
+                    })
+                    .key("fold-state"),
+                );
+            }
+        }
+        if !reasoning || expanded {
             row = row.child(
-                ui::text(if expanded {
-                    format!("Showing {} retained bytes; local view only.", m.text.len())
-                } else {
-                    format!(
-                        "Preview: {} of {} retained bytes; expand to inspect.",
-                        prefix.len(),
-                        m.text.len()
-                    )
-                })
-                .key("fold-state"),
+                ui::text(if expanded { m.text.as_str() } else { prefix })
+                    .role("message-body")
+                    .key("body"),
             );
         }
-        row = row.child(ui::text(if expanded { m.text.as_str() } else { prefix }).key("body"));
         if m.truncated {
             row = row.child(
                 ui::text("Display text truncated at 64 KiB; full history remains in Hermes.")
