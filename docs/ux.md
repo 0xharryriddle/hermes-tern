@@ -4,6 +4,8 @@ Status: native/plain connected client is implemented and locally tested; provide
 
 ## Current slice: reasoning blocks and Commands/F4 repair
 
+Deployment update:the owner-approved personal executable now matches the verified reasoning/Commands build at `18b9302`;four installed-binary production-PTY methods pass. Open a new Hermes tab to use it;existing tabs keep the older executable. This supersedes the historical not-installed note later in this section,not the still-open live-provider/window/pixel gates. [Configuration](configuration.md#local-developer-installation) records the exact hash and backup.
+
 Conversation messages have compact role markers and subtle left rules, not identical unstructured text. Only owner-supplied reasoning is shown: a separate Reasoning block starts collapsed, including short text, and offers Show reasoning/Hide reasoning through the existing local pointer/keyboard inspector. Expanding never sends a prompt or owner request. New tokens append without collapsing the block; whitespace, tool-separated reasoning and same-response fallback deduplication are covered. Answers remain separate and visible. Missing reasoning does not generate a placeholder thought or change the provider's existing reasoning policy.
 
 Resume projects canonical assistant `reasoning`/`reasoning_content`, then recognized top-level `reasoning.summary`, `reasoning.text` and `thinking` detail entries; opaque signatures, encrypted data and native replay carriers are not rendered. Structured detail extraction is bounded to 128 entries/64 KiB and existing transcript retention still applies. Unsupported carrier layouts remain unavailable, not raw JSON.

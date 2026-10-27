@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checkpoint": "focused-TUI-and-private-verification-launcher-local-verified-remote-CI-separate",
+  "checkpoint": "focused-TUI-installed-readback-verified-remote-CI-pass-not-live-window-completion",
   "authority": "Task state only; planned tasks do not authorize execution. Evidence claims require verification.json and STATUS.md.",
   "requirements": [
     {
@@ -130,6 +130,7 @@
       ],
       "evidence": [
         "Isolated package catalog accepted manifest/entry paths.",
+        "Latestexplicitownerbinaryupdate:installed~/.local/bin/hermes-tern0755SHA5d1cc97f913856fffd0527dd4c4bfb8e4652bb26244d659dc3adaf310fd68bdb matchesverified18b9302runtime;previous6adffee3binarybackupat~/.cache/hermes-tern/update-e64d52cd89e0/backup/hermes-tern. Exactreadback/loginPATH/version/openhelp and4installedproductionPTYmethods(reasoningresume/stream/fallback/F4pointer)PASS. Pluginpayloadunchanged/catalogready0problems,noHermesrestart/configDB/provider/personalsessionmutation. ActualCI40469064010PASS429Rust386Python2ignored. Notactualwindow/pixel/liveprovideracceptance,T03stillblocked.",
         "Owner-authorized Tern update2026-10-27:previous manual binary lackedopen;preservedoldbinary+plugin at ~/.cache/hermes-tern/install-2b2452721edb/backup. Exact sealed currentbinary6adffee3a3a7f4c3548922b97edcf319c55b65f3300e011d17ec15e88aab2ef6 mode0755+twofiles installed via supportedternplugininstall--force;catalogready/no problems,bytehash/loginPATH/version/openhelp PASS. InstalledLuauregistration/chatopen/preview/errorcallbackharness+isolatedinstallednativepreviewlightdark2pairsPASS. ExistingTerndaemonreachable,reloadbyinstaller,noHermesrestart/provider/sessionmutation/peerinstall. Realwindowpalette/pixels/liveunqualified;T03stillblocked,notaggregatecampaignaddition.",
         "Owner-authorized personal developer installation2026-10-24:verified0.1.0 binary0755 on login-shell PATH and Tern plugin copy match checkout/build. Installed plain and light/dark offscreen preview pass;doctor connected without session mutation/inference. No daemon at install,catalog ready proves parsing only;actual-window acceptance remains blocked. No peer plugin or Hermes restart.",
         "Xvfb window control action returned ok, but expected preview surface timed out; initial gate.applies=true and gate.signed_in=false.",
@@ -302,7 +303,7 @@
       ],
       "blockers": [
         "Real-window plugin and provider-backed native conversation acceptance remain unestablished; T-03 access gate still separate.",
-        "Independent final-source approval remains open. Focused TUI reviewer established one fallback scope defect;parent Rust/productionPTY RED-GREEN remediated it,not independent postfix approval. VisionHTTP402 prevents pixel acceptance. Personal installation now supports open,but has not received the current reasoning/Commands repair.",
+        "Independent final-source approval remains open. Focused TUI reviewer established one fallback scope defect;parent Rust/productionPTY RED-GREEN remediated it,not independent postfix approval. VisionHTTP402 prevents pixel acceptance. Personal installation now includes the reasoning/Commands repair with4installed-binary PTYmethodsPASS;actualwindow/provider qualification is still separate.",
         "History local/native synthetic178/191 with36native cases is partial acceptance:updated pixel inspection and independent final-source approval missing;complete delayed bounded source review received/reconciled. Full/raw/server-paged history,maximum-load,whole-control accessibility,mux/manual-scroll matrix,OS transport failures and provider/window behavior remain open. NativePageDown not qualified;PageUpDownPTY-only. Parent remediation is not independent approval or animation/accessibility certification."
       ]
     },

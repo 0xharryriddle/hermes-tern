@@ -1,5 +1,11 @@
 # Current build status
 
+## Current personal TUI binary update — 2026-10-27
+
+After explicit owner approval, `~/.local/bin/hermes-tern` now contains the verified TUI build SHA-256 `5d1cc97f913856fffd0527dd4c4bfb8e4652bb26244d659dc3adaf310fd68bdb`, regular mode0755, matching source checkpoint `18b9302`. Previous binary `6adffee3…` is preserved byte-for-byte at `~/.cache/hermes-tern/update-e64d52cd89e0/backup/hermes-tern`. Exact-target readback, login-shell PATH/version/open-help and four installed-executable production-PTY methods pass: resumed reasoning Show/Hide, stream whitespace/open-state continuity, tool-separated fallback blocks, and F4/pointer Commands with namespaced skills. Those fixtures use synthetic owners, not personal conversations or provider calls. Tern plugin payloads are unchanged and catalog remains ready/no problems. No Hermes restart, config/database change, plugin reinstall or cleanup occurred. Already-running tabs retain their old executable; a new Hermes tab uses the updated PATH binary.
+
+Actual GitHub CI for `18b930281dd75403d493ac59a5e8983306a81e85` passed429Rust/386Python, two live ignored: [run40469064010](https://github.com/0xharryriddle/hermes-tern/actions/runs/40469064010). Its runtime binary is the same one with80native synthetic cases/212image-layout pairs below. This installation supplement does not add live-provider, actual-window or pixel acceptance and does not close the conditional PR gate. Earlier installed-copy and CI-pending statements below describe their historical capture, not the current install.
+
 ## Verification-launcher portability follow-up
 
 The TUI repair below is committed and pushed as `9c1cd6d`. Actual GitHub runs `40460296877` and `40467480020` failed with 12 Python errors in coordinator-load setup: `verify.sh` created its fresh default scratch directory under inherited umask022 as0755, while the existing harness correctly requires0700. Local pre-provisioned private TMPDIR had masked this launcher defect. The repair sets umask077 before creation, without chmodding an existing caller-selected directory, changing the workflow or weakening the harness.
