@@ -164,13 +164,15 @@ def gate_status(required, rows):
 
 def validate_native_report(data):
     expected = {(case, size, theme)
-                for case in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history")
+                for case in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins")
                 for size in ("1100x760", "480x760") for theme in ("light", "dark")}
     rows = data.get("cases", [])
     identities = [(r.get("case"), r.get("size"), r.get("theme")) for r in rows]
     if data.get("status") != "passed" or data.get("expected_cases") != len(expected) or len(identities) != len(expected) or set(identities) != expected:
         raise ValueError("native matrix is missing or duplicates a required case")
     for row in rows:
+        if row.get("case") == "profile-picker" and (row.get("selected_gateway_thread_joined") is not True or row.get("selected_gateway_errors") != []):
+            raise ValueError("selected profile process evidence incomplete")
         if row.get("status") != "passed" or row.get("gateway_thread_joined") is not True or row.get("gateway_errors") != [] or not row.get("outputs"):
             raise ValueError("native case evidence incomplete")
         process = row.get("renderer", {})
@@ -179,6 +181,10 @@ def validate_native_report(data):
         control = row.get("control", {})
         if control.get("status") != "passed" or not control.get("projections") or control.get("quit_unconfirmed"):
             raise ValueError("native readiness/exit evidence incomplete")
+        client_exit = row.get("client_exit")
+        if (not isinstance(client_exit, dict) or client_exit.get("status") != "exited"
+                or type(client_exit.get("exit_code")) is not int or client_exit["exit_code"] != 0):
+            raise ValueError("native zero client exit evidence incomplete")
 
 
 def source_witnesses():

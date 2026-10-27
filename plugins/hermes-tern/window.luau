@@ -6,7 +6,7 @@ tern.command({
     id = "chat",
     title = "Hermes: Open conversation",
     run = function(cx)
-        local pane = cx.layout:new_tab({ command = "hermes-tern chat" })
+        local pane = cx.layout:new_tab({ command = "hermes-tern open" })
         if pane == nil then
             cx:toast("error", "Could not open Hermes conversation")
         end

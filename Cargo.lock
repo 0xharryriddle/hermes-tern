@@ -366,7 +366,9 @@ dependencies = [
 name = "hermes-tern-gateway"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "hermes-tern-core",
+ "rustix",
  "serde",
  "serde_json",
  "tungstenite",

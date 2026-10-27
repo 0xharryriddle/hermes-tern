@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import patch
 import uuid
 
+import fixture_process
 from fixture_process import wait_supervisor
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,8 +62,14 @@ class CoordinatorRecoveryTests(unittest.TestCase):
     def cli(self, *args, check=True):
         result = subprocess.run([str(BINARY), "coord", "--state", str(self.state), *args],
                                 capture_output=True, timeout=6)
-        if check:
-            self.assertEqual(result.returncode, 0, "fixture operator command failed")
+        if check and result.returncode != 0:
+            operation = args[0] if args else "unclassified"
+            diagnostic = fixture_process.cli_failure_diagnostic(result, operation)
+            try:
+                fixture_process.record_cli_failure(self.root, result, operation)
+            except OSError:
+                pass  # Storage failure cannot replace the original command failure.
+            self.fail(f"fixture operator command failed: {diagnostic['category']}; outcome unknown; no automatic retry")
         return result
 
     def register(self, session):

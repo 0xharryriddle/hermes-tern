@@ -1,5 +1,5 @@
 use hermes_tern_ui::{
-    app::{NativeInput, edit_key, next_native, next_native_for_surface},
+    app::{NativeInput, drain_native_inbox, edit_key, next_native, next_native_for_surface},
     composer::Composer,
     view::UiAction,
 };
@@ -94,6 +94,60 @@ impl Terminal for WakeScript {
 }
 fn event(value: Value) -> Vec<u8> {
     format!("\x1b_tsp;e;{value}\x1b\\").into_bytes()
+}
+
+#[test]
+fn selection_barrier_preserves_decoded_errors_and_leaves_later_input_unread() {
+    for scope in ["current", "global", "other"] {
+        let chunks = Rc::new(RefCell::new(VecDeque::new()));
+        let reads = Rc::new(RefCell::new(0));
+        let mut session: Session<UiAction> = Session::with_terminal(
+            WakeScript {
+                inner: Script {
+                    chunks: chunks.clone(),
+                    closed: Rc::new(RefCell::new(false)),
+                },
+                waker: Waker::new().unwrap(),
+                reads: reads.clone(),
+            },
+            Options::new().record(None),
+        )
+        .unwrap()
+        .unwrap();
+        let sf = session.open(SurfaceOptions::inline()).unwrap();
+        let mut error = json!({"ev":"error","msg":"UNTRUSTED-SELECTION-ERROR"});
+        if scope != "global" {
+            error["sf"] = json!(if scope == "current" {
+                session.surface_id(sf)
+            } else {
+                "other"
+            });
+        }
+        let mut first = b"\r".to_vec();
+        first.extend(event(error));
+        chunks.borrow_mut().push_back(first);
+        chunks
+            .borrow_mut()
+            .push_back(event(json!({"ev":"error","msg":"LATER-READ"})));
+        assert!(matches!(
+            next_native(&mut session).unwrap(),
+            NativeInput::Input(_)
+        ));
+        let before = *reads.borrow();
+        let result = drain_native_inbox(&mut session, sf);
+        if scope == "other" {
+            assert!(result.is_ok());
+        } else {
+            assert!(result.is_err());
+        }
+        assert_eq!(
+            *reads.borrow(),
+            before,
+            "selection barrier performed a new read"
+        );
+        assert_eq!(chunks.borrow().len(), 1);
+        assert!(session.is_open(sf));
+    }
 }
 
 #[test]

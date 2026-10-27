@@ -3,6 +3,9 @@ use super::{Result, sql};
 use rusqlite::{Connection, TransactionBehavior};
 use uuid::Uuid;
 
+mod recovery;
+pub(super) use recovery::validate_archive;
+
 // Additive only: old envelopes and delivery states remain unchanged.
 pub(super) const V2: &str = "
     CREATE TABLE message_dispositions(

@@ -7,10 +7,35 @@ use crate::{
 };
 use hermes_tern_core::error::{Error, Result};
 use serde_json::{Value, json};
-use std::time::{Duration, Instant};
+use std::{
+    path::Path,
+    time::{Duration, Instant},
+};
 
 pub fn connect(options: &AttachOptions, limits: &Limits) -> Result<RpcClient> {
     RpcClient::connect(discover(options, limits)?, limits.clone())
+}
+/// A roster row is metadata only. Mint a new profile-bound grant and compare its
+/// exact canonical home before opening any socket; never route via a sibling name.
+pub fn connect_selected(
+    options: &AttachOptions,
+    limits: &Limits,
+    selected: &Path,
+) -> Result<RpcClient> {
+    if options.home.as_deref() != Some(selected)
+        || !selected.is_absolute()
+        || !selected.is_dir()
+        || selected.canonicalize()?.as_path() != selected
+    {
+        return Err(Error::Config(
+            "selected profile must be an existing canonical home",
+        ));
+    }
+    let grant = discover(options, limits)?;
+    if Some(grant.profile_id.as_str()) != selected.to_str() {
+        return Err(Error::Bootstrap("selected profile differs from grant"));
+    }
+    RpcClient::connect(grant, limits.clone())
 }
 /// For unbound inspection only. Session commands use the session event reducer.
 pub fn call(

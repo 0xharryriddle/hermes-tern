@@ -10,7 +10,7 @@ use tern_sdk::{
     nodes,
     ui::{self, View},
 };
-pub const STYLE: &str = ".ht-button{padding:4px 10px;margin:4px 8px 4px 0;border-radius:3px;background:var(--l2)} .ht-controls{display:flex;gap:8px;align-items:center} .ht-keyboard-focus{outline:2px dashed var(--accent);outline-offset:2px} .ht-keyboard-ready{outline-style:solid}";
+pub const STYLE: &str = ".ht-button{padding:4px 10px;margin:4px 8px 4px 0;border-radius:3px;background:var(--l2)} .ht-controls,.ht-navigation{display:flex;gap:8px;align-items:center;flex-wrap:wrap} .ht-navigation .ht-button{padding:4px;margin-right:0} .ht-keyboard-focus{outline:2px dashed var(--accent);outline-offset:2px} .ht-keyboard-ready{outline-style:solid} .ht-runtime-panel{max-height:55vh;overflow:auto} .ht-runtime-list{max-height:35vh;overflow:auto}";
 #[derive(Clone, Debug)]
 pub enum UiAction {
     Send(String),
@@ -23,6 +23,83 @@ pub enum UiAction {
         generation: u64,
     },
     Exit,
+    /// Local inspection only. Never becomes a runtime command or prompt.
+    RuntimeDetails(bool),
+    OpenMcp {
+        panel: u64,
+    },
+    McpPanel(bool),
+    ReviewMcp {
+        panel: u64,
+    },
+    ConfirmMcp {
+        panel: u64,
+        control: String,
+    },
+    RuntimePage {
+        from: usize,
+        to: usize,
+    },
+    TaskPlan {
+        panel: u64,
+        open: bool,
+    },
+    TaskPlanPage {
+        panel: u64,
+        snapshot: String,
+        from: usize,
+        to: usize,
+    },
+    ReadDelegated {
+        panel: u64,
+    },
+    DelegatedPage {
+        panel: u64,
+        snapshot: String,
+        from: usize,
+        to: usize,
+    },
+    Models(bool),
+    Commands(bool),
+    Attachments(bool),
+    ReviewAttachment {
+        panel: u64,
+    },
+    StageAttachment {
+        panel: u64,
+        prepared: String,
+    },
+    AddAttachment {
+        panel: u64,
+        receipt: String,
+    },
+    ReloadCommands,
+    ReadCommand {
+        catalog: String,
+        panel: u64,
+        index: usize,
+    },
+    CommandPage {
+        from: usize,
+        to: usize,
+    },
+    CommandOutputPage {
+        from: usize,
+        to: usize,
+    },
+    ReloadModels,
+    SelectModel {
+        catalog: String,
+        index: usize,
+    },
+    ApplyModel {
+        control: String,
+        confirm: bool,
+    },
+    ModelPage {
+        from: usize,
+        to: usize,
+    },
     /// Local retained-text inspection, never an upstream action or approval.
     InspectText {
         id: String,
@@ -149,6 +226,15 @@ pub fn render_with_transcript(
     notice: Option<&str>,
     transcript: &Transcript,
 ) -> View<UiAction> {
+    render_with_submission(state, composer, notice, transcript, state.can_submit())
+}
+pub fn render_with_submission(
+    state: &SessionState,
+    composer: &Composer,
+    notice: Option<&str>,
+    transcript: &Transcript,
+    can_submit: bool,
+) -> View<UiAction> {
     let mut main =
         ui::col().child(ui::text(format!("Hermes / {}", state.session_id)).key("heading"));
     main = main.child(
@@ -164,6 +250,7 @@ pub fn render_with_transcript(
         ))
         .key("state"),
     );
+
     if state.display_truncated {
         main = main.child(
             ui::text("Display retention limit reached; canonical history remains in Hermes.")
@@ -284,7 +371,7 @@ pub fn render_with_transcript(
         main = main.child(panel);
     }
     let mut controls = ui::html::div().class("ht-controls").key("controls");
-    if state.can_submit() && !transcript.inspecting() {
+    if can_submit && !transcript.inspecting() {
         controls = controls.child(
             ui::html::button("Send")
                 .class("ht-button")
@@ -315,10 +402,23 @@ pub fn render_with_transcript(
             .cursor(composer.utf16_cursor())
             .placeholder("Enter sends · Tab inspects · Shift+Enter newline · Ctrl+C interrupts · Ctrl+D detaches")
             .mode(if transcript.inspecting() { "inspect" } else { "insert" })
-            .sendable(state.can_submit() && !transcript.inspecting())
+            .sendable(can_submit && !transcript.inspecting())
             .on_send(|text| UiAction::Send(text.to_owned()))
             .on_focus(UiAction::Focus),
         controls,
+        ui::html::div().class("ht-navigation").key("navigation")
+            .child(ui::html::button("Runtime details · F2")
+                .class("ht-button ht-runtime-entry")
+                .key("runtime")
+                .on_click(UiAction::RuntimeDetails(true)))
+            .child(ui::html::button("Session model · F3")
+                .class("ht-button ht-model-entry")
+                .key("models")
+                .on_click(UiAction::Models(true)))
+            .child(ui::html::button("Commands · F4")
+                .class("ht-button ht-command-entry")
+                .key("commands")
+                .on_click(UiAction::Commands(true))),
         ui::text(
             notice.unwrap_or(if transcript.inspecting() {
                 "Inspect retained text: Tab/Shift+Tab moves · Enter/Space toggles · Escape returns to draft."
@@ -328,4 +428,18 @@ pub fn render_with_transcript(
         )
         .key("notice"),
     ])
+}
+
+pub fn render_with_details(
+    state: &SessionState,
+    composer: &Composer,
+    notice: Option<&str>,
+    transcript: &Transcript,
+    details: &crate::runtime::RuntimeDetails,
+) -> View<UiAction> {
+    if details.is_open() {
+        details.render(state, composer, notice)
+    } else {
+        render_with_transcript(state, composer, notice, transcript)
+    }
 }

@@ -11,6 +11,7 @@ use hermes_tern_ui::{app, preview};
 
 mod cli_coord;
 mod cli_omp;
+mod cli_recovery;
 
 #[derive(Parser)]
 #[command(name = "hermes-tern", version, about = "Hermes native client for Tern")]
@@ -28,6 +29,10 @@ enum Commands {
     Coord(CoordArgs),
     /// Offline v1->v2 upgrade with verified archival; refuses a live coordinator
     MigrateStore(MigrateArgs),
+    /// Offline exact archive/key diagnostic; never restores or activates authority
+    PreflightRecovery(cli_recovery::RecoveryArgs),
+    /// Offline publish one operator-attested retained original key; never open SQLite
+    RecoverOperatorKey(cli_recovery::OperatorKeyArgs),
     /// One bounded peer tool request on stdin; binding provisioned by an operator
     PeerTool {
         #[arg(long)]
@@ -37,6 +42,13 @@ enum Commands {
     Preview,
     /// Discover an existing gateway and verify capabilities; no inference
     Doctor(RuntimeArgs),
+    /// Native session picker; New/Resume require explicit human activation
+    Open {
+        #[command(flatten)]
+        runtime: RuntimeArgs,
+        #[arg(long)]
+        cwd: Option<PathBuf>,
+    },
     /// Inspect one bounded history projection snapshot; never resume or send
     History {
         #[command(flatten)]
@@ -107,6 +119,8 @@ pub fn run() -> ExitCode {
         Some(Commands::Serve(args)) => args.run(),
         Some(Commands::Coord(args)) => args.run(),
         Some(Commands::MigrateStore(args)) => args.run(),
+        Some(Commands::PreflightRecovery(args)) => args.run(),
+        Some(Commands::RecoverOperatorKey(args)) => args.run(),
         Some(Commands::PeerTool { binding }) => {
             hermes_tern_supervisor::peer::run_stdin(&binding).map(|value| println!("{value}"))
         }
@@ -118,6 +132,9 @@ pub fn run() -> ExitCode {
             let report = inspect::doctor(&options, &Limits::default())?;
             println!("{report}");
             Ok(())
+        }),
+        Some(Commands::Open { runtime, cwd }) => runtime.options().and_then(|options| {
+            hermes_tern_ui::launcher::open(options, cwd.map_or_else(std::env::current_dir, Ok)?)
         }),
         Some(Commands::Sessions { runtime, stored }) => runtime.options().and_then(|options| {
             println!("{}", app::sessions(&options, stored)?);

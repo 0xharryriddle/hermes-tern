@@ -1,5 +1,8 @@
 //! Session projection. Only upstream receipts decide admission outcomes.
-use crate::protocol::{Event, Inbound};
+use crate::{
+    protocol::{Event, Inbound},
+    task_plan::Projection,
+};
 use hermes_tern_core::{
     error::{Error, Result},
     text::display_text,
@@ -97,6 +100,8 @@ pub struct SessionState {
     pub messages: VecDeque<Message>,
     pub prompts: BTreeMap<String, Prompt>,
     pub info: Value,
+    /// Optional owner-reported display state, never task execution authority.
+    pub task_plan: Projection,
     pub display_truncated: bool,
     pub terminal: Option<Value>,
     pub admissions: BTreeMap<String, String>,
@@ -150,9 +155,32 @@ fn content(v: &Value) -> String {
 }
 impl SessionState {
     pub fn reconcile(&mut self, snapshot: Value) -> Result<()> {
+        let todo = snapshot.get("todo_state").cloned().unwrap_or(Value::Null);
+        let todo_generation = snapshot["execution_generation"].as_u64();
         let mut fresh = Self::from_snapshot(&self.profile, &self.instance, snapshot)?;
         if fresh.session_id != self.session_id {
             return Err(Error::Protocol("snapshot changed session identity"));
+        }
+        if fresh.authority_epoch < self.authority_epoch
+            || fresh.revision < self.revision
+            || fresh.generation < self.generation
+            || (fresh.replay_epoch == self.replay_epoch && fresh.last_sequence < self.last_sequence)
+        {
+            return Err(Error::Protocol(
+                "snapshot regressed owner state; reconnect to reconcile",
+            ));
+        }
+        if self.connected
+            && !self.suspended
+            && fresh.authority_epoch == self.authority_epoch
+            && fresh.generation == self.generation
+            && fresh.replay_epoch == self.replay_epoch
+            // Pending receipts can advance hydration past the generation that
+            // supplied this task plan. Never reapply those discarded old rows.
+            && todo_generation == Some(fresh.generation)
+        {
+            fresh.task_plan = self.task_plan.clone();
+            fresh.task_plan.update(&todo);
         }
         fresh.own_admission = self.own_admission.clone();
         fresh.awaiting_admission = self.awaiting_admission;
@@ -188,6 +216,7 @@ impl SessionState {
             messages: VecDeque::new(),
             prompts: BTreeMap::new(),
             info: v["info"].clone(),
+            task_plan: Projection::default(),
             display_truncated: false,
             terminal: None,
             admissions: BTreeMap::new(),
@@ -201,6 +230,7 @@ impl SessionState {
             observed_completion: None,
             completed: VecDeque::new(),
         };
+        s.task_plan.update(&v["todo_state"]);
         let history = v
             .get("display_messages")
             .or_else(|| v.get("messages"))
@@ -276,6 +306,7 @@ impl SessionState {
         self.status = "submission refused, not admitted".into();
     }
     pub fn mark_disconnected(&mut self) {
+        self.task_plan.invalidate();
         self.unknown = self.awaiting_admission || !self.admissions.is_empty() || self.running;
         self.connected = false;
         self.suspended = true;
@@ -360,6 +391,7 @@ impl SessionState {
     }
     fn advance_generation(&mut self, generation: u64) {
         if generation > self.generation {
+            self.task_plan.invalidate();
             self.generation = generation;
             self.prompts.clear();
             self.stream_id = None;
@@ -418,6 +450,7 @@ impl SessionState {
         self.suspended = true;
         self.prompts.clear();
         self.status = "replay gap; controls suspended until snapshot".into();
+        self.task_plan.invalidate();
         vec![Action::Snapshot]
     }
     pub fn apply(&mut self, inbound: Inbound) -> Result<Vec<Action>> {
@@ -458,6 +491,37 @@ impl SessionState {
             return Ok(self.resnapshot());
         }
         self.last_sequence = seq;
+        if !matches!(
+            e.kind.as_str(),
+            "todo.updated"
+                | "session.updated"
+                | "message.start"
+                | "message.delta"
+                | "message.interim"
+                | "message.complete"
+                | "approval.request"
+                | "clarify.request"
+                | "approval.settled"
+                | "clarify.settled"
+                | "request.cancel"
+                | "session.info"
+                | "tool.start"
+                | "tool.complete"
+                | "status.update"
+                | "notice"
+                | "error"
+        ) {
+            // Preserve stream accounting without granting unsupported metadata
+            // execution authority. session.updated is consumed by the driver.
+            return Ok(vec![]);
+        }
+        if e.kind == "todo.updated"
+            && (e.authority_epoch != Some(self.authority_epoch) || e.generation.is_none())
+        {
+            // An optional display frame cannot acquire generation authority
+            // merely because the generic event path accepts absent fences.
+            return Ok(vec![]);
+        }
         if let Some(g) = e.generation {
             if g < self.generation {
                 return Ok(vec![]);
@@ -482,6 +546,14 @@ impl SessionState {
             return Ok(vec![]);
         }
         match e.kind.as_str() {
+            "todo.updated" => {
+                // Do not infer task scope from an unscoped optional frame.
+                if e.generation == Some(self.generation)
+                    && e.authority_epoch == Some(self.authority_epoch)
+                {
+                    self.task_plan.update(p);
+                }
+            }
             "message.start" => {
                 self.running = true;
                 self.status = "running".into();

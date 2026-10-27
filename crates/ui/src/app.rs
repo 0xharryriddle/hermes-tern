@@ -13,6 +13,7 @@ use hermes_tern_gateway::{
     config::{AttachOptions, Limits, SessionOptions},
     driver::Conversation,
     inspect,
+    transport::RpcClient,
 };
 use serde_json::Value;
 use std::{
@@ -51,6 +52,12 @@ pub fn next_native_for_surface<M>(session: &mut Session<M>, sf: Surface) -> Resu
     if session.is_open(sf) {
         return Ok(input);
     }
+    drain_native_inbox(session, sf)?;
+    Ok(NativeInput::Closed)
+}
+/// Fence an explicit surface transition against already-decoded rejections.
+/// Discard queued UI actions; never read another terminal chunk in this adapter.
+pub fn drain_native_inbox<M>(session: &mut Session<M>, sf: Surface) -> Result<()> {
     // Pinned SDK next() drains its inbox BEFORE checking its waker and BEFORE
     // reading. Signal once: the first None is an exact inbox-end barrier, not
     // a timed poll that might ingest an unbounded stream after surface loss.
@@ -64,7 +71,7 @@ pub fn next_native_for_surface<M>(session: &mut Session<M>, sf: Surface) -> Resu
     for _ in 0..8192 {
         match session.next(Some(Duration::ZERO)) {
             Ok(Some(input)) => reject_terminal_error(&input, session.surface_id(sf))?,
-            Ok(None) | Err(tern_sdk::Error::InputClosed) => return Ok(NativeInput::Closed),
+            Ok(None) | Err(tern_sdk::Error::InputClosed) => return Ok(()),
             Err(_) => return Err(Error::Transport("native terminal input failed")),
         }
     }
@@ -111,6 +118,47 @@ fn native_error(_: tern_sdk::Error) -> Error {
     Error::Transport("native terminal rendering failed")
 }
 
+fn connect_native() -> Result<(Option<Session<UiAction>>, Option<Visibility>)> {
+    let options = Options::new()
+        .app("hermes-tern")
+        .feature(feature::SEND)
+        .record(None);
+    let direct = io::stdin().is_terminal()
+        && io::stdout().is_terminal()
+        && std::env::var_os("TERN_TSP").is_none_or(|v| v != "0")
+        && ["TMUX", "STY", "ZELLIJ"]
+            .iter()
+            .all(|k| std::env::var_os(k).is_none_or(|v| v.is_empty()));
+    if direct {
+        let seen = Visibility::default();
+        let session =
+            Session::with_terminal(seen.wrap(Tty::open()?), options).map_err(native_error)?;
+        Ok((session, Some(seen)))
+    } else {
+        Ok((Session::connect(options).map_err(native_error)?, None))
+    }
+}
+
+pub(crate) fn chat_existing(
+    client: RpcClient,
+    limits: Limits,
+    options: SessionOptions,
+) -> Result<()> {
+    let (session, visibility) = connect_native()?;
+    let session = session.ok_or(Error::Unsupported(
+        "native Tern unavailable after launcher; no session opened",
+    ))?;
+    let mut conversation = Conversation::open(client, limits, options)?;
+    eprintln!("Hermes session: {}", conversation.state.session_id);
+    let result = run_native(&mut conversation, session, visibility);
+    let detached = if conversation.state.connected {
+        conversation.detach()
+    } else {
+        Ok(())
+    };
+    result.and(detached)
+}
+
 pub fn chat(
     attach: AttachOptions,
     options: SessionOptions,
@@ -130,29 +178,7 @@ pub fn chat(
         return Err(Error::Config("query must be nonempty and at most 64 KiB"));
     }
     let (native, visibility) = if !plain && query.is_none() {
-        let options = Options::new()
-            .app("hermes-tern")
-            .feature(feature::SEND)
-            .record(None);
-        // Preserve SDK mux detection/title ownership. The additional visibility
-        // observer is qualified only for the direct TTY path, not mux transports.
-        let direct = io::stdin().is_terminal()
-            && io::stdout().is_terminal()
-            && std::env::var_os("TERN_TSP").is_none_or(|v| v != "0")
-            && ["TMUX", "STY", "ZELLIJ"]
-                .iter()
-                .all(|k| std::env::var_os(k).is_none_or(|v| v.is_empty()));
-        if direct {
-            let seen = Visibility::default();
-            let session = Session::<UiAction>::with_terminal(seen.wrap(Tty::open()?), options)
-                .map_err(native_error)?;
-            (session, Some(seen))
-        } else {
-            (
-                Session::<UiAction>::connect(options).map_err(native_error)?,
-                None,
-            )
-        }
+        connect_native()?
     } else {
         (None, None)
     };
@@ -189,6 +215,11 @@ fn run_native(
     }
     let mut composer = Composer::default();
     let mut transcript = Transcript::default();
+    let mut details = crate::runtime::RuntimeDetails::default();
+    let mut models = crate::models::ModelPicker::default();
+    let mut commands = crate::commands::CommandPanel::default();
+    let mut attachments = crate::attachments::AttachmentPanel::default();
+    let mut mcp = crate::mcp::McpPanel::default();
     let mut notice = None;
     if let Some(seen) = &visibility {
         seen.bind(session.surface_id(sf));
@@ -198,7 +229,7 @@ fn run_native(
     session
         .render(
             sf,
-            view::render_with_transcript(&conversation.state, &composer, None, &transcript),
+            view::render_with_details(&conversation.state, &composer, None, &transcript, &details),
         )
         .map_err(native_error)?;
     session.focus(sf, Some("dock.ed")).map_err(native_error)?;
@@ -215,6 +246,9 @@ fn run_native(
             }
         }
         if dirty {
+            details.reconcile(&conversation.state);
+            models.reconcile(&conversation.models);
+            commands.reconcile(&conversation.commands);
             transcript.layout_changed()?;
         }
         let input = next_native_for_surface(&mut session, sf)?;
@@ -224,27 +258,88 @@ fn run_native(
             NativeInput::Input(input) => match *input {
                 Input::Key(key) => {
                     dirty = true;
-                    let local = if let Some(seen) = &visibility {
-                        let visible = seen.key_visibility(&key)?;
-                        transcript.keyboard(&conversation.state, &key, visible.positioned)
-                    } else if key.is("tab") || key.is("shift+tab") {
-                        Err(Error::Unsupported(
-                            "keyboard inspection requires direct TTY visibility",
-                        ))
-                    } else {
-                        Ok(false)
-                    };
-                    match local.and_then(|consumed| {
-                        if consumed {
-                            Ok(None)
-                        } else {
-                            edit_key(&mut composer, &key)
+                    let visible = visibility
+                        .as_ref()
+                        .map(|seen| seen.key_visibility(&key))
+                        .transpose()?;
+                    if key.is("f5") {
+                        Some(UiAction::Attachments(!attachments.is_open()))
+                    } else if attachments.is_open() {
+                        let before = attachments.path().to_owned();
+                        let handled = attachments.key(&key);
+                        if before != attachments.path() {
+                            conversation.attachments.invalidate_prepared();
                         }
-                    }) {
-                        Ok(a) => a,
-                        Err(e) => {
-                            notice = Some(e.to_string());
+                        match handled {
+                            Ok(true) => {
+                                transcript.layout_changed()?;
+                                None
+                            }
+                            Ok(false) => edit_key(&mut composer, &key)?,
+                            Err(error) => {
+                                notice = Some(error.to_string());
+                                None
+                            }
+                        }
+                    } else if mcp.is_open() {
+                        if mcp.key(&key) {
+                            if !mcp.is_open() {
+                                conversation.mcp.cancel_review();
+                            }
+                            transcript.layout_changed()?;
                             None
+                        } else {
+                            edit_key(&mut composer, &key)?
+                        }
+                    } else if key.is("f2") {
+                        Some(UiAction::RuntimeDetails(!details.is_open()))
+                    } else if key.is("f3") {
+                        Some(UiAction::Models(!models.is_open()))
+                    } else if key.is("f4") {
+                        Some(UiAction::Commands(!commands.is_open()))
+                    } else if commands.is_open() {
+                        if commands.key(&conversation.commands, &key) {
+                            transcript.layout_changed()?;
+                            None
+                        } else {
+                            edit_key(&mut composer, &key)?
+                        }
+                    } else if models.is_open() {
+                        if models.key(&conversation.models, &key) {
+                            transcript.layout_changed()?;
+                            None
+                        } else {
+                            edit_key(&mut composer, &key)?
+                        }
+                    } else if details.is_open() {
+                        if details.key(&conversation.state, &key) {
+                            transcript.layout_changed()?;
+                            None
+                        } else {
+                            edit_key(&mut composer, &key)?
+                        }
+                    } else {
+                        let local = if let Some(visible) = visible {
+                            transcript.keyboard(&conversation.state, &key, visible.positioned)
+                        } else if key.is("tab") || key.is("shift+tab") {
+                            Err(Error::Unsupported(
+                                "keyboard inspection requires direct TTY visibility",
+                            ))
+                        } else {
+                            Ok(false)
+                        };
+                        match local.and_then(|consumed| {
+                            if consumed {
+                                Ok(None)
+                            } else {
+                                edit_key(&mut composer, &key)
+                            }
+                        }) {
+                            Ok(a) => a,
+                            Err(e) => {
+                                notice = Some(e.to_string());
+                                None
+                            }
                         }
                     }
                 }
@@ -270,6 +365,234 @@ fn run_native(
             dirty = true;
             let result = match action {
                 UiAction::Exit => break,
+                UiAction::Attachments(open) => {
+                    mcp.set_open(false);
+                    conversation.mcp.cancel_review();
+                    attachments.set_open(open);
+                    details.set_open(false);
+                    models.set_open(false);
+                    commands.set_open(false);
+                    if open
+                        && conversation.attachments.phase()
+                            == hermes_tern_gateway::attachments::Phase::Prepared
+                    {
+                        conversation.attachments.invalidate_prepared();
+                    }
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::ReviewAttachment { panel } if attachments.accepts(panel) => {
+                    conversation.prepare_attachment(attachments.path())
+                }
+                UiAction::StageAttachment { panel, prepared } if attachments.accepts(panel) => {
+                    conversation.stage_attachment(&prepared)
+                }
+                UiAction::AddAttachment { panel, receipt } if attachments.accepts(panel) => {
+                    if !conversation.can_submit() {
+                        Err(Error::Protocol(
+                            "session controls pending; no attachment insertion",
+                        ))
+                    } else {
+                        conversation
+                            .attachments
+                            .reference(&conversation.state, &receipt)
+                            .map(str::to_owned)
+                            .and_then(|reference| {
+                                // Build the whole draft before consuming insertion authority.
+                                let mut next = composer.clone();
+                                next.end();
+                                next.insert(&format!("\n{reference}\n"))?;
+                                conversation
+                                    .attachments
+                                    .added(&conversation.state, &receipt)?;
+                                composer = next;
+                                Ok(())
+                            })
+                    }
+                }
+                UiAction::ReviewAttachment { .. }
+                | UiAction::StageAttachment { .. }
+                | UiAction::AddAttachment { .. } => Err(Error::Protocol(
+                    "attachment controls changed; use the current visible panel",
+                )),
+                UiAction::Commands(open) => {
+                    mcp.set_open(false);
+                    conversation.mcp.cancel_review();
+                    commands.set_open(open);
+                    attachments.set_open(false);
+                    details.set_open(false);
+                    models.set_open(false);
+                    transcript.layout_changed()?;
+                    if open
+                        && conversation.commands.phase()
+                            == hermes_tern_gateway::commands::Phase::Empty
+                    {
+                        conversation.load_commands()
+                    } else {
+                        Ok(())
+                    }
+                }
+                UiAction::ReloadCommands if commands.is_open() => conversation.load_commands(),
+                UiAction::ReadCommand {
+                    catalog,
+                    panel,
+                    index,
+                } if commands.accepts_read(panel, index) => {
+                    conversation.read_command(&catalog, index)
+                }
+                UiAction::CommandPage { from, to } if commands.is_open() => {
+                    commands.page(&conversation.commands, from, to);
+                    Ok(())
+                }
+                UiAction::CommandOutputPage { from, to } if commands.is_open() => {
+                    commands.output_page(&conversation.commands, from, to);
+                    Ok(())
+                }
+                UiAction::ReloadCommands
+                | UiAction::ReadCommand { .. }
+                | UiAction::CommandPage { .. }
+                | UiAction::CommandOutputPage { .. } => Err(Error::Protocol(
+                    "command controls changed; use the current visible panel",
+                )),
+                UiAction::Models(open) => {
+                    mcp.set_open(false);
+                    conversation.mcp.cancel_review();
+                    models.set_open(open);
+                    attachments.set_open(false);
+                    details.set_open(false);
+                    commands.set_open(false);
+                    transcript.layout_changed()?;
+                    if open
+                        && conversation.models.phase() == hermes_tern_gateway::models::Phase::Empty
+                    {
+                        conversation.load_models()
+                    } else {
+                        Ok(())
+                    }
+                }
+                UiAction::ReloadModels if models.is_open() => conversation.load_models(),
+                UiAction::SelectModel { catalog, index } if models.visible(index) => {
+                    conversation.select_model(&catalog, index)
+                }
+                UiAction::ApplyModel { control, confirm } if models.is_open() => {
+                    conversation.apply_model(&control, confirm)
+                }
+                UiAction::ModelPage { from, to } if models.is_open() => {
+                    models.page(&conversation.models, from, to);
+                    Ok(())
+                }
+                UiAction::ReloadModels
+                | UiAction::SelectModel { .. }
+                | UiAction::ApplyModel { .. }
+                | UiAction::ModelPage { .. } => Err(Error::Protocol(
+                    "model controls changed; use the current visible panel",
+                )),
+                UiAction::OpenMcp { panel } if details.accepts_read(panel) => {
+                    details.set_open(false);
+                    attachments.set_open(false);
+                    models.set_open(false);
+                    commands.set_open(false);
+                    mcp.set_open(true);
+                    transcript.layout_changed()?;
+                    if conversation.mcp.blocked() {
+                        Ok(())
+                    } else {
+                        conversation.review_mcp()
+                    }
+                }
+                UiAction::McpPanel(false) => {
+                    mcp.set_open(false);
+                    conversation.mcp.cancel_review();
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::ReviewMcp { panel } if mcp.accepts(panel) => conversation.review_mcp(),
+                UiAction::ConfirmMcp { panel, control } if mcp.accepts(panel) => {
+                    conversation.confirm_mcp(&control)
+                }
+                UiAction::OpenMcp { .. }
+                | UiAction::McpPanel(true)
+                | UiAction::ReviewMcp { .. }
+                | UiAction::ConfirmMcp { .. } => Err(Error::Protocol(
+                    "MCP panel changed; use current visible consent",
+                )),
+                UiAction::RuntimeDetails(open) => {
+                    mcp.set_open(false);
+                    conversation.mcp.cancel_review();
+                    details.set_open(open);
+                    attachments.set_open(false);
+                    models.set_open(false);
+                    commands.set_open(false);
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::RuntimePage { from, to } => {
+                    details.page(&conversation.state, from, to);
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::TaskPlan { panel, open } if details.accepts_read(panel) => {
+                    details.show_plan(&conversation.state, panel, open);
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::TaskPlanPage {
+                    panel,
+                    snapshot,
+                    from,
+                    to,
+                } if details.accepts_read(panel) => {
+                    details.plan_page(&conversation.state, panel, &snapshot, from, to);
+                    transcript.layout_changed()?;
+                    Ok(())
+                }
+                UiAction::TaskPlan { .. } | UiAction::TaskPlanPage { .. } => Err(Error::Protocol(
+                    "task plan panel changed; use current controls",
+                )),
+                UiAction::ReadDelegated { panel } if details.accepts_read(panel) => {
+                    let result = conversation.load_delegated(panel);
+                    if result.is_ok() {
+                        details.reset_delegated_page();
+                    }
+                    result
+                }
+                UiAction::DelegatedPage {
+                    panel,
+                    snapshot,
+                    from,
+                    to,
+                } if details.accepts_read(panel) => {
+                    details.delegated_page(
+                        &conversation.delegated,
+                        &conversation.state,
+                        panel,
+                        &snapshot,
+                        from,
+                        to,
+                    );
+                    Ok(())
+                }
+                UiAction::ReadDelegated { .. } | UiAction::DelegatedPage { .. } => Err(
+                    Error::Protocol("runtime panel changed; use the current visible read control"),
+                ),
+                UiAction::Send(_)
+                | UiAction::SubmitDraft
+                | UiAction::Approve { .. }
+                | UiAction::Clarify { .. }
+                | UiAction::Skip { .. }
+                | UiAction::InterruptTurn { .. }
+                | UiAction::InspectText { .. }
+                | UiAction::Focus
+                    if details.is_open()
+                        || models.is_open()
+                        || commands.is_open()
+                        || attachments.is_open()
+                        || mcp.is_open() =>
+                {
+                    Err(Error::Protocol(
+                        "return to conversation before using its controls",
+                    ))
+                }
                 UiAction::InspectText {
                     id,
                     control_id,
@@ -334,6 +657,7 @@ fn run_native(
             };
             notice = result.err().map(|e| e.to_string());
         }
+        conversation.delegated.panel_changed(details.control_id());
         if let Some(seen) = &visibility {
             dirty |= transcript.positioned(seen.positioned());
         }
@@ -345,12 +669,70 @@ fn run_native(
             session
                 .render(
                     sf,
-                    view::render_with_transcript(
-                        &conversation.state,
-                        &composer,
-                        notice.as_deref(),
-                        &transcript,
-                    ),
+                    if mcp.is_open() {
+                        mcp.render(
+                            &conversation.state,
+                            &conversation.mcp,
+                            &composer,
+                            notice.as_deref(),
+                            conversation.can_submit()
+                                && conversation.models.phase()
+                                    != hermes_tern_gateway::models::Phase::Deferred,
+                        )
+                    } else if attachments.is_open() {
+                        attachments.render(
+                            &conversation.state,
+                            &conversation.attachments,
+                            &composer,
+                            notice.as_deref(),
+                            conversation.can_submit(),
+                        )
+                    } else if commands.is_open() {
+                        commands.render(
+                            &conversation.state,
+                            &conversation.commands,
+                            &composer,
+                            notice.as_deref(),
+                        )
+                    } else if models.is_open() {
+                        models.render(
+                            &conversation.state,
+                            &conversation.models,
+                            &composer,
+                            notice.as_deref(),
+                        )
+                    } else if details.is_open() {
+                        details.render_with_delegated(
+                            &conversation.state,
+                            &composer,
+                            notice.as_deref(),
+                            &conversation.delegated,
+                        )
+                    } else {
+                        view::render_with_submission(
+                            &conversation.state,
+                            &composer,
+                            if !conversation.can_submit() && conversation.state.can_submit() {
+                                Some(if conversation.mcp.blocked() {
+                                    conversation.mcp.notice
+                                } else if conversation.attachments.blocked() {
+                                    conversation.attachments.notice
+                                } else if matches!(
+                                    conversation.commands.phase(),
+                                    hermes_tern_gateway::commands::Phase::Running
+                                        | hermes_tern_gateway::commands::Phase::Unknown
+                                ) {
+                                    conversation.commands.notice
+                                } else {
+                                    conversation.models.notice.as_str()
+                                })
+                            } else {
+                                notice.as_deref()
+                            },
+                            &transcript,
+                            conversation.can_submit(),
+                        )
+                    },
                 )
                 .map_err(native_error)?;
         }
@@ -361,13 +743,25 @@ fn run_native(
             && seen.needs_positioning(transcript.navigation_revision())
         {
             let mut ops = vec![Op::Focus {
-                id: if transcript.inspecting() {
+                id: if transcript.inspecting()
+                    || details.is_open()
+                    || models.is_open()
+                    || commands.is_open()
+                    || attachments.is_open()
+                    || mcp.is_open()
+                {
                     None
                 } else {
                     Some("dock.ed".into())
                 },
             }];
-            if let Some(id) = transcript.reveal_target(&conversation.state) {
+            if !details.is_open()
+                && !models.is_open()
+                && !commands.is_open()
+                && !attachments.is_open()
+                && !mcp.is_open()
+                && let Some(id) = transcript.reveal_target(&conversation.state)
+            {
                 ops.push(Op::Reveal {
                     id,
                     at: RevealAt::Nearest,

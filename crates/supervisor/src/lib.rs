@@ -28,7 +28,9 @@ const RESPONSE: usize = 524288;
 
 mod credential;
 mod operator_key;
+pub mod operator_key_recovery;
 pub mod peer;
+pub mod recovery;
 mod secrets;
 use peer::{PeerBinding, PeerOperation};
 use secrets::create as create_secret;
@@ -194,7 +196,13 @@ fn read_frame(stream: &mut UnixStream, limit: usize, deadline: Instant) -> Resul
             .ok_or(Error::Timeout("IPC frame"))?;
         stream.set_read_timeout(Some(left))?;
         let mut chunk = [0; 4096];
-        let n = stream.read(&mut chunk)?;
+        let n = match stream.read(&mut chunk) {
+            Ok(n) => n,
+            // Continue this frame, not the operation that produced it. Keep both
+            // the accumulated prefix and the original absolute read deadline.
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error.into()),
+        };
         if n == 0 {
             return Err(Error::Protocol("partial IPC frame at EOF"));
         }

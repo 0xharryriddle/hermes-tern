@@ -17,6 +17,7 @@ use std::{
 };
 
 mod image;
+mod preflight;
 mod recovery;
 use image::DatabaseImage;
 

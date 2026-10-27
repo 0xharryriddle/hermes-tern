@@ -5,8 +5,11 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
+import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -174,6 +177,81 @@ class RuntimeAutorunTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             smoke.scenario("unknown", ["binary"], Path("stderr"))
 
+    def test_client_exit_sidecar_captures_real_status_before_terminal_marker(self):
+        smoke = module("smoke_native_chat")
+        scratch = self.scratch() / "with space"
+        scratch.mkdir(mode=0o700)
+        text, _ = smoke.scenario("deny", [sys.executable, "-c", "raise SystemExit(7)"], scratch / "client.stderr")
+        shell = json.loads(next(line[4:] for line in text.splitlines() if line.startswith("run ")))
+        completed = subprocess.run(["/bin/sh", "-c", shell], capture_output=True, text=True, timeout=3)
+        self.assertEqual(completed.stdout, "HT_CLIENT_EXIT_7\n")
+        sidecar = scratch / "client.exit"
+        self.assertEqual(sidecar.read_bytes(), b"7\n")
+        self.assertEqual(sidecar.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(smoke.client_exit_status(sidecar), {"status": "exited", "exit_code": 7})
+
+    def test_client_exit_diagnostic_is_bounded_strict_and_never_follows_a_symlink(self):
+        smoke = module("smoke_native_chat")
+        scratch = self.scratch()
+        sidecar = scratch / "client.exit"
+        self.assertEqual(smoke.client_exit_status(sidecar), {"status": "not_observed"})
+        for content in (b"0\n", b"255\n", b"7\n"):
+            sidecar.write_bytes(content)
+            self.assertEqual(smoke.client_exit_status(sidecar), {"status": "exited", "exit_code": int(content)})
+        for content in (b"", b"00\n", b"256\n", b"-1\n", b"0\nextra", b"PRIVATE" * 1000):
+            sidecar.write_bytes(content)
+            self.assertEqual(smoke.client_exit_status(sidecar), {"status": "invalid"})
+        alias = scratch / "symlink.exit"
+        alias.symlink_to(sidecar)
+        self.assertEqual(smoke.client_exit_status(alias), {"status": "invalid"})
+
+    def test_failed_control_records_attempt_and_socket_phase_without_retry_or_raw_data(self):
+        smoke = module("smoke_native_chat")
+        scratch = self.scratch()
+        endpoint = scratch / "ctl.sock"
+        lines = []
+        errors = []
+        with socket.socket(socket.AF_UNIX) as listener:
+            listener.bind(str(endpoint))
+            listener.listen(1)
+            listener.settimeout(3)
+            def serve():
+                try:
+                    for _ in range(6):
+                        conn, _ = listener.accept()
+                        with conn:
+                            conn.settimeout(3)
+                            data = bytearray()
+                            while not data.endswith(b"\n"):
+                                data.extend(conn.recv(4096))
+                            line = data.decode().strip()
+                            lines.append(line)
+                            if line.startswith("expect "):
+                                # Peer closes after receiving the attempt, not before send.
+                                continue
+                            conn.sendall(b'{"ok":true}\n')
+                except Exception as error:
+                    errors.append(type(error).__name__)
+            peer = threading.Thread(target=serve)
+            peer.start()
+            record = {}
+            smoke.drive_control(endpoint, 'ready\nclick ".fixture"\nexpect "PRIVATE-TEXT"\n',
+                                "deny", "dark", "1100x760", record)
+            peer.join(timeout=4)
+        self.assertFalse(peer.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(sum(line.startswith("click ") for line in lines), 1)
+        self.assertEqual(sum(line.startswith("expect ") for line in lines), 1)
+        self.assertEqual(record["status"], "failed")
+        self.assertEqual(record["failed_call"]["command"], "expect")
+        self.assertEqual(record["failed_call"]["phase"], "receive")
+        self.assertEqual(record["failed_call"]["error_class"], "ValueError")
+        self.assertGreater(record["failed_call"]["remaining_seconds"], 0)
+        self.assertLessEqual(record["failed_call"]["remaining_seconds"], 55)
+        self.assertNotIn("PRIVATE-TEXT", json.dumps(record))
+        self.assertEqual(record["calls"][-1]["command"], "quit")
+        self.assertEqual(record["calls"][-1]["status"], "passed")
+
     def test_native_zero_exit_without_image_output_is_not_acceptance(self):
         smoke = module("smoke_native_chat")
         scratch = self.scratch()
@@ -212,14 +290,21 @@ class RuntimeAutorunTests(unittest.TestCase):
         runner = module("verify_runtime")
         rows = [{"case": c, "size": s, "theme": t, "status": "passed", "gateway_thread_joined": True,
                  "gateway_errors": [], "outputs": [{"image": "fixture", "layout": "fixture", "sha256": "fixture"}],
+                 "client_exit": {"status": "exited", "exit_code": 0},
                  "control": {"status": "passed", "projections": [{"editor": "synthetic-checker-control"}]},
+                 "selected_gateway_thread_joined": True, "selected_gateway_errors": [],
                  "renderer": {"status": "passed", "exit_code": 0, "reaped": True}}
-                for c in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history")
+                for c in ("conversation", "deny", "skip", "interrupt", "disconnect", "long-output", "keyboard-output", "keyboard-reduced", "history", "launcher-close", "launcher-new", "launcher-resume", "runtime-details", "model-picker", "profile-picker", "commands", "attachments", "mcp-reload", "plugins")
                 for s in ("1100x760", "480x760") for t in ("light", "dark")]
-        good = {"status": "passed", "expected_cases": 36, "cases": rows}
+        good = {"status": "passed", "expected_cases": 76, "cases": rows}
         runner.validate_native_report(good)
         for bad in [{"status": "passed", "expected_cases": 0, "cases": []},
-                    {**good, "cases": rows[:-1]}, {**good, "cases": [rows[0]] * 36},
+                    {**good, "cases": rows[:-1]}, {**good, "cases": [rows[0]] * 68},
+                    {"status": "passed", "expected_cases": 64, "cases": [r for r in rows if r["case"] != "attachments"]},
+                    {"status": "passed", "expected_cases": 60, "cases": [r for r in rows if r["case"] != "commands"]},
+                    {"status": "passed", "expected_cases": 56, "cases": [r for r in rows if r["case"] != "profile-picker"]},
+                    {"status": "passed", "expected_cases": 52, "cases": [r for r in rows if r["case"] != "model-picker"]},
+                    {"status": "passed", "expected_cases": 48, "cases": [r for r in rows if r["case"] != "runtime-details"]},
                     {"status": "passed", "expected_cases": 32, "cases": [r for r in rows if r["case"] != "history"]},
                     {"status": "passed", "expected_cases": 28, "cases": [r for r in rows if r["case"] != "long-output"]},
                     {"status": "passed", "expected_cases": 24, "cases": [r for r in rows if not r["case"].startswith("keyboard-")]}]:
@@ -228,6 +313,12 @@ class RuntimeAutorunTests(unittest.TestCase):
         for field, value in [("status", "failed"), ("outputs", []), ("gateway_thread_joined", False), ("control", {})]:
             bad = copy.deepcopy(good)
             bad["cases"][0][field] = value
+            with self.assertRaises(ValueError):
+                runner.validate_native_report(bad)
+        for exit_status in (None, {}, {"status": "not_observed"}, {"status": "invalid"},
+                            {"status": "exited", "exit_code": 7}, {"status": "exited", "exit_code": False}):
+            bad = copy.deepcopy(good)
+            bad["cases"][0]["client_exit"] = exit_status
             with self.assertRaises(ValueError):
                 runner.validate_native_report(bad)
 

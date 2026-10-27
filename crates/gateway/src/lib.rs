@@ -1,9 +1,21 @@
 //! Hermes gateway transport and session authority adapter.
+pub mod attachment_file;
+pub mod attachments;
 pub mod bootstrap;
+pub mod catalog;
+pub mod commands;
 pub mod config;
+pub mod delegated;
+pub mod delegated_catalog;
 pub mod driver;
 pub mod history;
 pub mod inspect;
+pub mod mcp;
+pub mod models;
+pub mod plugin_catalog;
+pub mod profiles;
 pub mod protocol;
 pub mod session;
+pub mod task_plan;
+pub mod tool_catalog;
 pub mod transport;

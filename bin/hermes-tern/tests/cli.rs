@@ -135,3 +135,22 @@ fn coordinator_help_and_missing_state_are_honest() {
     assert_eq!(out.status.code(), Some(1));
     assert!(out.stdout.is_empty());
 }
+
+#[test]
+fn native_open_is_explicit_and_noninteractive_input_refuses_before_discovery() {
+    let help = run(&["open", "--help"]);
+    assert!(help.status.success());
+    assert!(String::from_utf8(help.stdout).unwrap().contains("--cwd"));
+    let out = run(&["open", "--python", "/nonexistent/python"]);
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+    assert!(
+        String::from_utf8(out.stderr)
+            .unwrap()
+            .contains("native Tern")
+    );
+    assert_eq!(
+        run(&["open", "--query", "never-submit"]).status.code(),
+        Some(2)
+    );
+}

@@ -81,3 +81,30 @@ fn helper_success_and_timeout_are_bounded_and_reaped() {
     assert!(timeout.is_err());
     assert!(begin.elapsed() < Duration::from_secs(2));
 }
+
+#[test]
+fn selected_profile_refuses_wrong_grant_before_any_socket_connection() {
+    use hermes_tern_gateway::{
+        config::{AttachOptions, Limits},
+        inspect,
+    };
+    use std::{fs, net::TcpListener};
+    let root = std::path::PathBuf::from(std::env::var_os("TMPDIR").expect("private TMPDIR"))
+        .join(format!("ht-selected-profile-{}", uuid::Uuid::new_v4()));
+    fs::create_dir_all(root.join("ui-tui/scripts")).unwrap();
+    let home = root.join("selected");
+    fs::create_dir(&home).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    fs::write(root.join("ui-tui/scripts/gateway_bootstrap.py"),format!("import os\ndef bootstrap(start,recover):\n    assert (start,recover)==(False,False)\n    assert os.environ['HERMES_HOME']=={home:?}\n    return {{'url':'ws://{}/api/ws','protocols':['hermes-gateway-v1','hermes-gateway-ticket.synthetic'],'profile_id':'/wrong-profile','instance_id':'synthetic'}}\n",listener.local_addr().unwrap())).unwrap();
+    let options = AttachOptions::new(&root, "/usr/bin/python3", Some(home.clone())).unwrap();
+    let result = inspect::connect_selected(&options, &Limits::default(), &home);
+    assert!(matches!(
+        result,
+        Err(hermes_tern_core::error::Error::Bootstrap(
+            "selected profile differs from grant"
+        ))
+    ));
+    assert!(matches!(listener.accept(),Err(e) if e.kind()==std::io::ErrorKind::WouldBlock));
+    fs::write(root.join("ownership.json"),serde_json::to_vec(&json!({"retention":"retain;no deletion","paths":[root,root.join("ui-tui"),root.join("ui-tui/scripts"),root.join("ui-tui/scripts/gateway_bootstrap.py"),home,root.join("ownership.json")]})).unwrap()).unwrap();
+}

@@ -6,7 +6,9 @@ publish.workspace = true
 description = "Bounded attach-only Hermes gateway client and session state"
 
 [dependencies]
+base64.workspace = true
 hermes-tern-core.workspace = true
+rustix.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tungstenite.workspace = true

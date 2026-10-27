@@ -25,6 +25,35 @@ fn disconnect_never_resubmits_an_ambiguous_prompt() {
     assert!(!s.can_submit());
 }
 #[test]
+fn snapshot_never_regresses_newer_owner_epoch_route_generation_or_sequence() {
+    for field in [
+        "authority_epoch",
+        "revision",
+        "execution_generation",
+        "last_sequence",
+    ] {
+        let mut s = state();
+        s.apply(event(
+            "session.info",
+            1,
+            2,
+            json!({"revision":3,"model":"newest"}),
+        ))
+        .unwrap();
+        let mut fresh = snapshot();
+        fresh["revision"] = json!(3);
+        fresh["execution_generation"] = json!(2);
+        fresh["last_sequence"] = json!(1);
+        fresh[field] = json!(0);
+        assert!(s.reconcile(fresh).is_err(), "accepted regressed {field}");
+        assert_eq!(s.info["model"], "newest");
+        assert_eq!(
+            (s.authority_epoch, s.revision, s.generation, s.last_sequence),
+            (1, 3, 2, 1)
+        );
+    }
+}
+#[test]
 fn streamed_events_before_admission_do_not_regress_generation_or_complete_early() {
     let mut s = state();
     s.submit("hello", "input-1").unwrap();

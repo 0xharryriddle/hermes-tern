@@ -2,5 +2,5 @@ schema = 1
 id = "hermes-tern"
 name = "Hermes for Tern"
 version = "0.1.0"
-description = "Open the hermes-tern Rust SDK preview; live agents are not connected yet."
+description = "Native Hermes session picker and conversation client, SDK preview and opt-in OMP handoff."
 window = "window.luau"

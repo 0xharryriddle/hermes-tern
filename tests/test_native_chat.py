@@ -40,7 +40,7 @@ def snapshot(running=False):
 
 
 class Gateway:
-    def __init__(self, running=False, disconnect_on_submit=False, accept_timeout=3, read_timeout=4, autostart=True, history=None):
+    def __init__(self, running=False, disconnect_on_submit=False, accept_timeout=3, read_timeout=4, autostart=True, history=None, catalog=None):
         if not 0 < accept_timeout <= 60 or not 0 < read_timeout <= 60:
             raise ValueError("fixture deadline must be bounded within 60 seconds")
         self.accept_timeout = accept_timeout
@@ -52,6 +52,18 @@ class Gateway:
         self.port = self.listener.getsockname()[1]
         self.running = running
         self.history = history
+        self.catalog = catalog
+        self.profile_id = "fixture-profile"
+        self.instance_id = "fixture-instance"
+        self.profiles: dict | None = None
+        self.model_mode: str | None = None
+        self.command_mode: str | None = None
+        self.attachment_mode: str | None = None
+        self.delegated_mode: str | None = None
+        self.mcp_mode: str | None = None
+        self.model_route = {"model":"old-model", "provider":"old-provider"}
+        self.model_revision = 1
+        self.model_generation = 2
         self.disconnect_on_submit = disconnect_on_submit
         self.stop = threading.Event()
         self.lock = threading.Lock()
@@ -151,12 +163,43 @@ class Gateway:
                 if method == "ping":
                     self.reply(request, {"pong": True})
                 elif method == "runtime.describe":
-                    self.reply(request, {"profile_id": "fixture-profile", "instance_id": "fixture-instance",
+                    self.reply(request, {"profile_id": self.profile_id, "instance_id": self.instance_id,
                         "capabilities": ["durable-admission-v1", "event-replay-v1", "local-cli-create-v1"],
                         "session_create": {"sources": ["tui"], "parameters": ["request_id", "source", "cwd", "yolo", "model", "provider"]}})
                 elif method == "client.capabilities":
                     assert request["params"]["server_requests"] is True
                     self.reply(request, {})
+                elif method == "reload.mcp" and self.mcp_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session", "confirm":True}
+                    if self.mcp_mode == "refused":
+                        self.send({"jsonrpc":"2.0", "id":request["id"], "error":{"code":4001,
+                            "message":"PRIVATE-MCP diagnostic", "data":{"reason":"permission_denied"}}})
+                    elif self.mcp_mode == "malformed":
+                        self.reply(request, {"status":"reloaded", "session":True, "message":"PRIVATE-MCP diagnostic"})
+                    else:
+                        self.reply(request, {"status":"reloaded", "session":"busy" if self.mcp_mode == "busy" else "applied",
+                            "session_servers":["fixture-server"],
+                            "unavailable":["unavailable-server"] if self.mcp_mode == "busy" else [],
+                            "message":"PRIVATE-MCP diagnostic", "raw_config":"PRIVATE-MCP config"})
+                elif method == "session.resume" and self.mcp_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session", "display_projection":True}
+                    value = snapshot(self.running)
+                    value.update(execution_generation=2 if self.mcp_mode == "busy" else 3, last_sequence=self.seq)
+                    value["info"].update(profile_id=self.profile_id, mcp_servers=[{"name":"fixture-server", "status":"connected"}])
+                    self.reply(request, value)
+                elif method == "subagent.list" and self.delegated_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session"}
+                    self.reply(request, {"subagents":[], "delegations":[]})
+                elif method == "session.list" and self.catalog is not None:
+                    assert request["params"] in ({"scope":"live","limit":200},{"scope":"stored","limit":200})
+                    self.reply(request, self.catalog[request["params"]["scope"]])
+                elif method == "profiles.list" and self.profiles is not None:
+                    assert request["params"] == {"include_sessions":False}
+                    self.reply(request, self.profiles)
+                elif method == "session.resume" and self.catalog is not None:
+                    assert request["params"]["display_projection"] is True
+                    result = snapshot()
+                    self.reply(request, result)
                 elif method == "session.create":
                     assert request["params"]["yolo"] is False
                     assert request["params"]["source"] == "tui"
@@ -164,6 +207,67 @@ class Gateway:
                 elif method == "session.history" and self.history is not None:
                     assert request["params"] == {"session_id": "fixture-session"}
                     self.reply(request, self.history)
+                elif method == "session.resume" and self.model_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session", "display_projection":True}
+                    value = snapshot(self.running)
+                    value.update(revision=self.model_revision, execution_generation=self.model_generation, last_sequence=self.seq)
+                    value["info"].update(self.model_route)
+                    self.reply(request,value)
+                elif method == "model.options" and self.model_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session", "explicit_only":True, "include_unconfigured":False, "refresh":False}
+                    if self.model_mode == "unavailable":
+                        self.send({"jsonrpc":"2.0", "id":request["id"], "error":{"code":-32601,"message":"PRIVATE diagnostic", "data":{"reason":"unsupported_method"}}})
+                    else:
+                        self.reply(request, {**self.model_route,"providers":[
+                            {"slug":"provider-exact","name":"Configured provider","authenticated":True,"models":["model-exact","model-limited"],"unavailable_models":["model-limited"],"api_url":"PRIVATE provider endpoint"},
+                            {"slug":"unconfigured","name":"No auth","authenticated":False,"models":["model-noauth"]}]})
+                elif method == "session.mutate" and self.model_mode is not None:
+                    params = request["params"]
+                    assert set(params) == {"session_id","request_id","expected_revision","expected_generation","operation","payload"}
+                    assert params["session_id"] == "fixture-session" and params["operation"] == "model"
+                    assert params["expected_revision"] == self.model_revision and params["expected_generation"] == self.model_generation
+                    assert params["payload"]["model"] == "model-exact" and params["payload"]["provider"] == "provider-exact"
+                    identity = {"session_id":"fixture-session","operation":"model"}
+                    if self.model_mode == "confirmation" and params["payload"].get("confirm") != "fixture-confirm-token":
+                        self.reply(request, {**identity,"status":"confirmation_required","confirm_required":True,"confirm":"fixture-confirm-token",
+                            "target_model":"model-exact","target_provider":"provider-exact","confirm_message":"Cost guard: explicit consent required","warnings":[]})
+                    elif self.model_mode == "deferred":
+                        self.reply(request, {**identity,"status":"deferred","revision":1,"execution_generation":2,"model":"model-exact"})
+                    else:
+                        self.model_route = {"model":"model-exact", "provider":"provider-exact"}
+                        self.model_revision += 1
+                        self.model_generation += 1
+                        self.reply(request, {**identity,"revision":self.model_revision,"execution_generation":self.model_generation, **self.model_route})
+                elif method == "session.info" and self.model_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session"}
+                    self.reply(request, {**self.model_route,"profile_id":"fixture-profile","yolo":False})
+                elif method == "commands.catalog" and self.command_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session"}
+                    self.reply(request,{"pairs":[["/memory","Memory inspection"],["/skills","Skill inspection"],["/tools","Tool catalog"],["/yolo","Unsupported control"]],
+                        "canon":{"/memory":"/memory","/skills":"/skills","/tools":"/tools","/yolo":"/yolo"},
+                        "commands":{"/memory":{},"/skills":{},"/tools":{},"/yolo":{}},"skills":{},"plugin_commands":{}})
+                elif method == "plugins.list" and self.command_mode is not None:
+                    assert request["params"] == {}
+                    self.reply(request, {"plugins":[], "toolsets":[], "portable_mcp_servers":[]})
+                elif method == "tools.show" and self.command_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session"}
+                    self.reply(request,{"sections":[{"name":"fixture-toolset","tools":[
+                        {"name":"fixture-search","description":"Reads bounded fixture data"},
+                        {"name":"fixture-fetch","description":"Fetches fixture text"}]}],"total":2})
+                elif method == "command.dispatch" and self.command_mode is not None:
+                    assert request["params"] == {"session_id":"fixture-session","name":"memory","arg":""}
+                    self.reply(request,{"type":"exec","output":"fixture-owner-memory"})
+                elif method == "file.attach" and self.attachment_mode is not None:
+                    params=request["params"]
+                    assert set(params)=={"session_id","name","data_url"}
+                    assert params["session_id"]=="fixture-session"
+                    assert params["data_url"].startswith("data:text/plain;base64,")
+                    assert len(params["data_url"])<=350000
+                    name=params["name"]
+                    ref_path="attachments/"+name
+                    self.reply(request,{"attached":True,"uploaded":True,"name":name,
+                        "path":"PRIVATE absolute path","ref_path":ref_path,"ref_text":"@file:"+ref_path,
+                        "api_key":"PRIVATE credential"})
                 elif method == "prompt.submit":
                     if self.disconnect_on_submit:
                         break
@@ -225,7 +329,7 @@ class NativeChat:
         bootstrap.parent.mkdir(parents=True, mode=0o700)
         grant = {"url": f"ws://127.0.0.1:{self.gateway.port}/api/ws",
                  "protocols": ["hermes-gateway-v1", "hermes-gateway-ticket.synthetic-fixture"],
-                 "profile_id": "fixture-profile", "instance_id": "fixture-instance"}
+                 "profile_id": self.gateway.profile_id, "instance_id": self.gateway.instance_id}
         bootstrap.write_text("def bootstrap(start,recover):\n    assert (start,recover)==(False,False)\n    return " + repr(grant) + "\n")
         self.stderr_file = (self.root / "client.stderr").open("wb")
         argv = command if command is not None else ["chat", "--cwd", str(self.root)]
@@ -265,6 +369,7 @@ class NativeChat:
             self.send(b"\x1b_tsp;r;" + json.dumps(hello).encode() + b"\x1b\\")
         elif verb == "o":
             self.surface = body["id"]
+            self.nodes = {}
         elif verb == "f":
             for op in body["ops"]:
                 if op[0] == "add":
