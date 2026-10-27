@@ -1,5 +1,11 @@
 # Current build status
 
+## Verification-launcher portability follow-up
+
+The TUI repair below is committed and pushed as `9c1cd6d`. Actual GitHub runs `40460296877` and `40467480020` failed with 12 Python errors in coordinator-load setup: `verify.sh` created its fresh default scratch directory under inherited umask022 as0755, while the existing harness correctly requires0700. Local pre-provisioned private TMPDIR had masked this launcher defect. The repair sets umask077 before creation, without chmodding an existing caller-selected directory, changing the workflow or weakening the harness.
+
+Three new tests execute the real shell launcher before its first Cargo gate: fresh default and explicit roots observed0755 RED then0700 GREEN; an existing explicit0755 root keeps its inode/mode unchanged. Full CI-shaped `/bin/bash -c 'umask 022; exec ./verify.sh'`, with TMPDIR absent and an owned fresh cache, passes429Rust/386Python, two live ignored, zero ResourceWarning; all265 source witnesses stayed unchanged and the child was reaped. An initial overly long private cache hit an unrelated AF_UNIX pathname limit; its failed log is retained, and only the probe cache path was shortened. Runtime TUI bytes, dependencies, lockfile, plugin and CI workflow are unchanged; the earlier80-case/212-pair native result remains scoped to the same runtime binary. Postdocs and the next actual remote CI result are separate; local PASS is not a remote PASS. The personal binary still lacks the current repair, and conditional PR/provider/window/pixel gates remain open.
+
 ## Current focused TUI repair — 2026-10-27
 
 Owner-requested scope: conversation reasoning blocks and the broken Commands/F4 catalog, plus adjacent UI regressions. Checkpoint `db9a544` was committed and pushed to `feat/native-entry` after a fresh 417 Rust/377 Python local pass; remote HEAD matched. No recovery, OMP, load or release feature was added in this repair.

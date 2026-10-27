@@ -2,6 +2,9 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 export PYTHONDONTWRITEBYTECODE=1
+# New verification outputs must be private even under a CI runner's umask 022.
+# Existing caller-selected directories are not silently chmodded.
+umask 077
 # A caller may select a different scratch root. Never use the system temp dir.
 export TMPDIR="${TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/hermes-tern/tmp}"
 mkdir -p -- "$TMPDIR"

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "checkpoint": "focused-TUI-reasoning-commands-local-native-verified-not-live-window-acceptance",
+  "checkpoint": "focused-TUI-and-private-verification-launcher-local-verified-remote-CI-separate",
   "authority": "Task state only; planned tasks do not authorize execution. Evidence claims require verification.json and STATUS.md.",
   "requirements": [
     {
@@ -539,6 +539,7 @@
       ],
       "evidence": [
         "scripts/verify_runtime.py and scripts/smoke_native_chat.py implemented; initial missing-script RED, empty-gate and missing-matrix RED, fixture-deadline/readiness RED and exited-parent descendant RED recorded before fixes.",
+        "CI portability follow-up:actualruns40460296877/40467480020 fail12Pythonsetup errors becausefreshdefault scratchcreated0755underumask022 whileharnessrequires0700. verify.sh sets077beforecreation,no chmodexistingpaths/no workflowchanges/no harnessweakening. Three actualshelllauncher tests:defaultandexplicitnewroot RED0755→GREEN0700,existing0755inode/modeunchanged. Fullfreshcache/noTMPDIR/inherited022 canonicalgate429Rust386Python2ignored0ResourceWarning/265sourcewitnessesPASS,reaped/noownedgroups. FirstlongprivatecacheAF_UNIXpathfailure retained;shorterprobeonlythenPASS. RuntimeTUIbinaryand80native212pairsunchanged;postdocsandnextactualremoteCIseparate.",
         "Final default autorun exit0 with all22command gates passed:canonical136Rust/139Python,2liveignored,8standalone package test/clippy pairs,static/fixture and20native cases/32image-layout pairs. Two current disconnect images inspected;earlier8image review historical.",
         "Eight Python/one Rust readiness methods observed RED then GREEN. Startup allowance15s,child-liveness/deadline refusal,accept after setup/launch,exact status probe kill/reap before retry and mid-probe supervisor-death detection. Production/operation/expiry/barrier/shutdown deadlines unchanged;no mutation retries.",
         "Review deleg_89e43e4e reconciled as earlier-loop guidance;parent verified source semantics and remediated3residual real-process cases. Complete final rerun passed,source witnesses checked and previous failures retained. Not independent post-fix review or full-product/live acceptance."

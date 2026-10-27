@@ -4,6 +4,8 @@ Status: implementation authorized; connected client, local coordination and phys
 
 ## Milestones and release gates
 
+Verification portability follow-up: TUI repair `9c1cd6d` is pushed. Actual CI failed only in private-scratch setup, not a TUI assertion. The shared verify.sh now creates new outputs with umask077, preserves existing caller path permissions, and passes the fresh-default/no-TMPDIR/inherited022 full gate:429Rust386Python/twoignored/zeroResourceWarning. Three real-launcher regressions observed RED/GREEN. Workflow, runtime/dependencies/plugin bytes and native80case/212pair scope are unchanged. Remote verification after this fix is separate; no PR/completion claim follows from local success.
+
 Current owner priority is the focused TUI repair, not another recovery/load tranche. Native-entry checkpoint `db9a544` is pushed. Reasoning blocks and Commands/F4 compatibility are implemented locally: 429 Rust/383 Python, two live ignored, zero ResourceWarning; all 80 native synthetic width/theme cases/212 image-layout pairs pass with exact hashes and cleanup checked. Existing-owner read-only metadata confirms the repaired parser accepts its 545-command catalog. The personal installed binary has not yet received this repair. Pixel inspection returned HTTP402, final repaired source has author verification rather than independent approval, and real-window/provider qualification remains open. T-03/T-07 and the wider product roadmap are not closed by this slice. See [current build status](STATUS.md) for failed generations and review remediation.
 
 | Milestone | Scope | Required tasks | Exit gate |

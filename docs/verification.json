@@ -1,6 +1,23 @@
 {
   "schema_version": 1,
-  "checkpoint": "focused-TUI-reasoning-commands-local-native-verified-not-live-window-acceptance",
+  "checkpoint": "focused-TUI-and-private-verification-launcher-local-verified-remote-CI-separate",
+  "current_verification_launcher": {
+    "status":"fresh_default_CI_shaped_local_verified_remote_result_separate",
+    "root_cause":"verify.sh_mkdir_inherited_umask022_created0755_private_TMPDIR_required0700",
+    "observed_remote_failures":[{"run":"40460296877","head":"db9a544c9ca59d683de9dd552855c5c9fe4bccb8","Python_errors":12},{"run":"40467480020","head":"9c1cd6dd0ea942e37d674b70125c886f25f5d4b4","Python_errors":12}],
+    "repair":"umask077_before_new_outputs;existing_caller_paths_not_chmodded",
+    "actual_launcher_regressions":3,
+    "RED":"fresh_default_and_explicit0755_before_first_Cargo_gate",
+    "GREEN":"new0700_existing0755_inode_mode_preserved",
+    "full":{"command":"/bin/bash -c 'umask 022; exec ./verify.sh'","TMPDIR_supplied":false,"fresh_private_cache":true,"created_mode":"0700","rust_passed":429,"python_passed":386,"live_ignored":2,"ResourceWarning":0,"source_witnesses":265,"source_drift":false,"gate_reaped":true,"remaining_owned_groups":[]},
+    "retained_probe_failure":"long_private_cache_AF_UNIX_path_too_long;shorter_cache_only_then_full_PASS",
+    "workflow_runtime_dependencies_lock_plugin":"unchanged",
+    "native":"same_runtime_binary_as_current_ui_repair;80cases212pairs_not_rerun_for_launcher_only",
+    "postdocs":"separate",
+    "remote_CI_after_fix":"not_yet_run_at_this_checkpoint",
+    "PR_created":false,
+    "personal_installed_binary_updated":false
+  },
   "current_ui_repair": {
     "status":"local_and_native_synthetic_verified_not_product_complete",
     "date":"2026-10-27",
